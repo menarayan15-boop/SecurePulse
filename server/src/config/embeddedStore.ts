@@ -5,11 +5,38 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_DIR = path.resolve(__dirname, '../../data');
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+function resolveDataDir(): string {
+  // If running in Vercel or AWS Lambda, the local files are read-only; use /tmp
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const tmpDir = path.join('/tmp', 'securepulse_data');
+    if (!fs.existsSync(tmpDir)) {
+      try {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      } catch {}
+    }
+    return tmpDir;
+  }
+
+  const localDir = path.resolve(__dirname, '../../data');
+  try {
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+    return localDir;
+  } catch {
+    // If local dir fails with EROFS (read-only filesystem), fallback to /tmp
+    const fallbackDir = path.join('/tmp', 'securepulse_data');
+    if (!fs.existsSync(fallbackDir)) {
+      try {
+        fs.mkdirSync(fallbackDir, { recursive: true });
+      } catch {}
+    }
+    return fallbackDir;
+  }
 }
+
+const DATA_DIR = resolveDataDir();
 
 export class EmbeddedCollection<T extends Record<string, any>> {
   private filePath: string;
@@ -282,6 +309,31 @@ export class EmbeddedCollection<T extends Record<string, any>> {
     return this.findOne({ _id: String(id) });
   }
 
+  async updateOne(filter: Record<string, any>, update: Record<string, any>): Promise<{ modifiedCount: number }> {
+    const item = this.items.find((i) => this.matchFilter(i, filter));
+    if (!item) return { modifiedCount: 0 };
+    if (update.$set) {
+      for (const [k, v] of Object.entries(update.$set)) {
+        if (k.includes('.')) {
+          const parts = k.split('.');
+          let curr: any = item;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!curr[parts[i]]) curr[parts[i]] = {};
+            curr = curr[parts[i]];
+          }
+          curr[parts[parts.length - 1]] = v;
+        } else {
+          (item as any)[k] = v;
+        }
+      }
+    } else {
+      Object.assign(item, update);
+    }
+    (item as any).updatedAt = new Date();
+    this.saveToFile();
+    return { modifiedCount: 1 };
+  }
+
   async updateMany(filter: Record<string, any>, update: Record<string, any>): Promise<{ modifiedCount: number }> {
     let count = 0;
     for (const item of this.items) {
@@ -317,5 +369,36 @@ export class EmbeddedCollection<T extends Record<string, any>> {
     (item as any).updatedAt = new Date();
     this.saveToFile();
     return this.wrapDoc(item);
+  }
+
+  async deleteOne(filter: Record<string, any>): Promise<{ deletedCount: number }> {
+    const idx = this.items.findIndex((i) => this.matchFilter(i, filter));
+    if (idx !== -1) {
+      this.items.splice(idx, 1);
+      this.saveToFile();
+      return { deletedCount: 1 };
+    }
+    return { deletedCount: 0 };
+  }
+
+  async deleteMany(filter: Record<string, any> = {}): Promise<{ deletedCount: number }> {
+    const initialLen = this.items.length;
+    this.items = this.items.filter((i) => !this.matchFilter(i, filter));
+    const deletedCount = initialLen - this.items.length;
+    if (deletedCount > 0) {
+      this.saveToFile();
+    }
+    return { deletedCount };
+  }
+
+  async findByIdAndDelete(id: any): Promise<any> {
+    const idStr = String(id?._id || id);
+    const idx = this.items.findIndex((i) => String(i._id) === idStr);
+    if (idx !== -1) {
+      const removed = this.items.splice(idx, 1)[0];
+      this.saveToFile();
+      return this.wrapDoc(removed);
+    }
+    return null;
   }
 }

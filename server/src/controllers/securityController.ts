@@ -314,6 +314,7 @@ export async function emergencyLockAccount(req: AuthenticatedRequest, res: Respo
 
     res.status(200).json({
       success: true,
+      accountStatus: 'locked',
       message: 'Emergency lock activated. All sessions have been terminated and your account is locked.',
     });
   } catch (err: any) {
@@ -358,17 +359,25 @@ export async function requestAccountRecovery(req: Request, res: Response): Promi
       metadata: { recoveryChallenge },
     });
 
-    await sendOtpEmail(user.email, otp, 'account unlock and security recovery', user.fullName);
+    try {
+      await sendOtpEmail(user.email, otp, 'recovery', user.fullName);
+    } catch (emailErr: any) {
+      console.error(`[AUTH_PIPELINE] [EMAIL_DISPATCH_FAILED] Recovery email aborted for ${user.email}:`, emailErr.message);
+      res.status(503).json({
+        success: false,
+        message: "We couldn't send your verification code. Please try again.",
+      });
+      return;
+    }
 
     const maskedEmail = user.email.replace(/(^.{2})(.*)(?=@)/, (_: string, a: string, b: string) => a + '*'.repeat(b.length));
 
     res.status(200).json({
       success: true,
-      message: 'Account unlock verification code sent.',
+      message: 'Verification code sent to your registered email.',
       recoveryChallenge,
       maskedEmail,
       userId: user._id,
-      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: 'Failed to initiate account recovery.' });

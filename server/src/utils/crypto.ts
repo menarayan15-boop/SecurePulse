@@ -44,3 +44,4 @@ export function verifyAccessToken(token: string): { userId: string; username: st
 export function verifyRefreshToken(token: string): { userId: string; sessionId: string } {
   return jwt.verify(token, JWT_REFRESH_SECRET) as { userId: string; sessionId: string };
 }
+

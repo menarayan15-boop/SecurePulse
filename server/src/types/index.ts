@@ -64,3 +64,4 @@ export interface AuthenticatedRequest extends Request {
   sessionId?: string;
   envInfo?: ILoginEnvironment;
 }
+

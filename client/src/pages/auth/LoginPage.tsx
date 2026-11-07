@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Lock, User, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Shield, Lock, User, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, RefreshCw, CheckCircle2, ArrowLeft, Info } from 'lucide-react';
 import { authApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { OtpInput } from '../../components/common/OtpInput';
@@ -8,7 +8,11 @@ import { SecurityBadge } from '../../components/common/SecurityBadge';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { loginSuccess } = useAuth();
+
+  const redirectParam = searchParams.get('redirect');
+  const targetDestination = redirectParam ? decodeURIComponent(redirectParam) : '/dashboard';
 
   // Login form state
   const [identifier, setIdentifier] = useState('');
@@ -17,6 +21,7 @@ export const LoginPage: React.FC = () => {
   const [rememberDevice, setRememberDevice] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // OTP Challenge state
   const [challengeActive, setChallengeActive] = useState(false);
@@ -27,16 +32,31 @@ export const LoginPage: React.FC = () => {
   const [riskLevel, setRiskLevel] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
   const [riskFactors, setRiskFactors] = useState<string[]>([]);
   const [challengeMessage, setChallengeMessage] = useState('');
-  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
 
   // OTP Resend cooldown timer
   const [resendCooldown, setResendCooldown] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
+  const startResendTimer = () => {
+    setResendCooldown(60);
+    setCanResend(false);
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   // Handle Initial Login
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSuccessMessage(null);
     setIsLoading(true);
 
     try {
@@ -46,41 +66,32 @@ export const LoginPage: React.FC = () => {
         rememberDevice,
       });
 
-      if (res.requiresOtp) {
-        // Unfamiliar environment or elevated risk detected!
+      if (res.requiresOtp || res.requiresEmailVerification) {
+        // Verification challenge active
         setChallengeActive(true);
         setChallengeToken(res.challengeToken);
-        setMaskedEmail(res.maskedEmail);
-        setRiskLevel(res.riskLevel);
-        setRiskFactors(res.factors || []);
-        setChallengeMessage(res.message);
-        if (res.devOtp) setDevOtpHint(res.devOtp);
-
-        // Start 60s resend timer
-        setResendCooldown(60);
-        setCanResend(false);
-        const timer = setInterval(() => {
-          setResendCooldown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              setCanResend(true);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
+        setMaskedEmail(res.maskedEmail || res.email);
+        setRiskLevel(res.riskLevel || 'medium');
+        setRiskFactors(res.factors || ['Identity verification required']);
+        setChallengeMessage(res.message || 'Verification code sent to your registered email.');
+        setSuccessMessage('Verification code sent to your registered email.');
+        startResendTimer();
       } else if (res.success && res.user) {
         // Direct login success
         loginSuccess(res.user);
-        navigate('/');
+        navigate(targetDestination);
       }
     } catch (err: any) {
       if (err.data?.isLocked) {
         setErrorMessage(
           'This account has been placed under Emergency Lockdown. Please use Account Recovery to unlock.'
         );
+      } else if (err.status === 401) {
+        setErrorMessage('Invalid email or password.');
+      } else if (err.status === 503) {
+        setErrorMessage("We couldn't send your verification code. Please try again.");
       } else {
-        setErrorMessage(err.message || 'Incorrect email/username or password.');
+        setErrorMessage(err.message || 'Invalid email or password.');
       }
     } finally {
       setIsLoading(false);
@@ -91,7 +102,7 @@ export const LoginPage: React.FC = () => {
   const handleOtpVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length !== 6) {
-      setErrorMessage('Please enter the full 6-digit verification passcode.');
+      setErrorMessage('Please enter the full 6-digit verification code.');
       return;
     }
 
@@ -102,10 +113,14 @@ export const LoginPage: React.FC = () => {
       const res = await authApi.verifyLoginOtp(challengeToken, otp, trustThisDevice);
       if (res.success && res.user) {
         loginSuccess(res.user);
-        navigate('/');
+        navigate(targetDestination);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Invalid or expired passcode. Please try again.');
+      if (err.message?.includes('expired') || err.data?.isExpired) {
+        setErrorMessage('Your verification code has expired.');
+      } else {
+        setErrorMessage('Invalid verification code.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -115,26 +130,15 @@ export const LoginPage: React.FC = () => {
   const handleResendOtp = async () => {
     if (!canResend) return;
     setErrorMessage(null);
+    setSuccessMessage(null);
     setIsLoading(true);
 
     try {
-      const res = await authApi.resendOtp({ challengeToken });
-      setCanResend(false);
-      setResendCooldown(60);
-      if (res.devOtp) setDevOtpHint(res.devOtp);
-
-      const timer = setInterval(() => {
-        setResendCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            setCanResend(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      await authApi.resendOtp({ challengeToken });
+      setSuccessMessage('Verification code sent to your registered email.');
+      startResendTimer();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to resend code.');
+      setErrorMessage(err.message || "We couldn't send your verification code. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -142,7 +146,8 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-cyber-bg dark:via-cyber-surface dark:to-cyber-bg transition-colors duration-200">
-      <div className="max-w-md w-full bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+      <div className="max-w-md w-full flex flex-col gap-4">
+        <div className="w-full bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
         {/* Subtle top accent bar */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
 
@@ -159,21 +164,27 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Redirect Notice (when user clicked a protected feature) */}
+        {redirectParam && !challengeActive && (
+          <div className="mb-6 p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-2.5 leading-relaxed">
+            <Info className="w-4 h-4 flex-shrink-0 text-blue-500" />
+            <span>Please sign in to access your personal security dashboard.</span>
+          </div>
+        )}
+
+        {/* Success Alert */}
+        {successMessage && (
+          <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2.5 leading-relaxed">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-500" />
+            <span>{successMessage}</span>
+          </div>
+        )}
+
         {/* Error Alert */}
         {errorMessage && (
           <div className="mb-6 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2.5 leading-relaxed">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-500" />
             <span>{errorMessage}</span>
-          </div>
-        )}
-
-        {/* DEV MODE OTP POPUP BANNER FOR INSTANT TESTING */}
-        {devOtpHint && (
-          <div className="mb-6 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between">
-            <span className="font-medium">Dev Test Code:</span>
-            <span className="font-mono font-bold tracking-widest text-sm bg-white dark:bg-cyber-card px-2 py-0.5 rounded border border-emerald-300">
-              {devOtpHint}
-            </span>
           </div>
         )}
 
@@ -298,10 +309,10 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div className="text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                A 6-digit one-time passcode was dispatched to:
+              <p className="text-xs text-gray-600 dark:text-gray-300">
+                Your verification code has been sent to your registered email. Please check your inbox and spam folder.
               </p>
-              <p className="font-semibold text-sm text-gray-800 dark:text-gray-200 font-mono mt-0.5">
+              <p className="font-semibold text-sm text-gray-800 dark:text-gray-200 font-mono mt-1">
                 {maskedEmail}
               </p>
             </div>
@@ -367,6 +378,19 @@ export const LoginPage: React.FC = () => {
           </form>
         )}
       </div>
+
+      {/* Back to Home Link */}
+      <div className="text-center">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors py-1 px-3 rounded-lg hover:bg-gray-200/50 dark:hover:bg-cyber-card"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
     </div>
+  </div>
   );
 };
+

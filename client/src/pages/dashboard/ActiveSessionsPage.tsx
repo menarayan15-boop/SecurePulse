@@ -229,3 +229,4 @@ export const ActiveSessionsPage: React.FC = () => {
     </div>
   );
 };
+

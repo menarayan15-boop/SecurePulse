@@ -76,13 +76,20 @@ export const ForgotPasswordPage: React.FC = () => {
             <ArrowRight className="w-4 h-4" />
           </button>
 
-          <div className="text-center pt-2">
+          <div className="flex items-center justify-between pt-2 text-xs">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to login</span>
+            </Link>
+
+            <Link
+              to="/"
+              className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:underline"
+            >
+              Back to Home
             </Link>
           </div>
         </form>
@@ -90,3 +97,4 @@ export const ForgotPasswordPage: React.FC = () => {
     </div>
   );
 };
+

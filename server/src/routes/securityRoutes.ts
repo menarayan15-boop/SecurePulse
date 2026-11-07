@@ -29,3 +29,4 @@ router.get('/health-score', getHealthScore);
 router.post('/emergency-lock', emergencyLockAccount);
 
 export default router;
+

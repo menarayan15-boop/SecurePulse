@@ -17,3 +17,4 @@ router.delete('/all', terminateAllSessions);
 router.delete('/:id', terminateSession);
 
 export default router;
+

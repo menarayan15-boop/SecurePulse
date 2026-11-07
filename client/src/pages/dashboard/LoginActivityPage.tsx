@@ -422,3 +422,4 @@ export const LoginActivityPage: React.FC = () => {
     </div>
   );
 };
+

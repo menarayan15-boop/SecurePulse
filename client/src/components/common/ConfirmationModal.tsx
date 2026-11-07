@@ -100,3 +100,4 @@ export const ConfirmationModal: React.FC<Props> = ({
     </div>
   );
 };
+

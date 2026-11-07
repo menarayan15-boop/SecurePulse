@@ -36,7 +36,7 @@ The platform automatically adapts its interface based on login time (converted t
 - **Password Security**: bcryptjs password hashing (12 rounds)
 - **Hardening**: Helmet.js security headers, CORS with credentials, express-rate-limit protection
 - **Telemetry Parsing**: `ua-parser-js` (Browser, OS, Device, Engine) and `geoip-lite` (City, State, Country, Coordinates)
-- **Notification Transports**: Nodemailer (configurable SMTP / Ethereal fallback with clean terminal console output)
+- **Notification Transports**: Resend API (`RESEND_API_KEY`) and authenticated Nodemailer SMTP (Gmail, Brevo, SendGrid, Amazon SES) with responsive branded HTML email templates
 
 ---
 
@@ -66,12 +66,15 @@ The platform automatically adapts its interface based on login time (converted t
   - `75 - 100`: Critical Risk (Mandatory OTP + Elevated Security Alert)
 - Valid trusted device tokens reduce friction for ordinary environmental shifts while upholding strict thresholds for anomalous bursts.
 
-### 3. 6-Digit OTP Verification Challenge
-- 6-digit numeric one-time passcode with split input boxes and auto-focus.
-- Stored as SHA-256 hashes with 5-minute expiration (TTL indexing).
-- Resend cooldown of 60 seconds.
-- Maximum 5 attempts per challenge before invalidation.
-- Supports "Trust this device for 30 days" upon successful challenge.
+### 3. Real 6-Digit Email OTP Verification & Zero-Leakage Architecture
+- **Real Inbox Delivery**: Single-use 6-digit verification codes are dispatched directly to the user's verified email address via Resend API or verified SMTP.
+- **Zero Exposure**: Verification codes are NEVER exposed on the frontend, never returned in API payloads, never leaked in console logs, and never stored in plain text.
+- **SHA-256 Hashing**: Stored strictly as SHA-256 hashes with an automated 5-minute TTL expiration.
+- **Strict Single-Use**: Validated OTPs cannot be replayed or reused.
+- **Resend Invalidation**: Requesting a new OTP immediately invalidates any prior active code.
+- **Brute-Force Shield**: Maximum 5 attempts per challenge before complete invalidation.
+- **60-Second Cooldown**: Rate-limited resend interval with responsive UI countdown.
+- **Device Trusting**: Optional "Trust this device for 30 days" bypasses repeated OTP prompts on subsequent logins from recognized environments under normal security conditions.
 
 ### 4. Trusted Device Management
 - Displays device name, browser, OS, device type, location, IP, first trusted date, last active, expiry, and current device indicator.
@@ -244,9 +247,18 @@ Open your browser at `http://localhost:3000` to access SecurePulse!
 
 SecurePulse includes an automated end-to-end test suite that verifies all 20 critical authentication, risk engine, and security scenarios:
 
+### Test Real Email Delivery to Your Inbox:
+Verify that your SMTP credentials or Resend API key work and send a real test OTP email directly to your inbox:
+
 ```bash
 cd server
-npx tsx src/test-full-suite.ts
+npm run test:email recipient@yourdomain.com
+```
+
+### Automated End-to-End Security Test Suite:
+```bash
+cd server
+npm test
 ```
 
 ### Test Suite Coverage:
@@ -291,9 +303,16 @@ npx tsx src/test-full-suite.ts
    - `JWT_ACCESS_SECRET=<random-64-character-string>`
    - `JWT_REFRESH_SECRET=<random-64-character-string>`
    - `CLIENT_URL=https://your-securepulse-app.vercel.app`
-   - `SMTP_HOST=<smtp.provider.com>`
-   - `SMTP_USER=<username>`
-   - `SMTP_PASS=<password>`
+   - **For Resend Email Delivery (Recommended):**
+     - `RESEND_API_KEY=re_...`
+     - `EMAIL_FROM="SecurePulse Security" <security@yourdomain.com>`
+   - **OR for Standard SMTP:**
+     - `SMTP_HOST=<smtp.provider.com>`
+     - `SMTP_PORT=587`
+     - `SMTP_SECURE=false`
+     - `SMTP_USER=<username>`
+     - `SMTP_PASS=<password>`
+     - `EMAIL_FROM="SecurePulse Security" <security@yourdomain.com>`
 
 ### 3. Frontend: Vercel
 1. Link your GitHub repository in [Vercel](https://vercel.com).
@@ -318,3 +337,4 @@ npx tsx src/test-full-suite.ts
 ## 📄 License
 
 This project is created as an independent, fully functional open cybersecurity platform. Completely free for all registered users without charges or paywalls.
+

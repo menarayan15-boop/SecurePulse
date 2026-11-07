@@ -25,7 +25,9 @@ export const DashboardLayout: React.FC = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    const currentPath = window.location.pathname;
+    const redirectUrl = currentPath && currentPath !== '/' ? `/login?redirect=${encodeURIComponent(currentPath)}` : '/login';
+    return <Navigate to={redirectUrl} replace />;
   }
 
   // If user account is locked, force to recovery page
@@ -86,3 +88,4 @@ export const DashboardLayout: React.FC = () => {
     </div>
   );
 };
+

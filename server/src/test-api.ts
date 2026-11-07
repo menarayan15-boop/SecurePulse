@@ -1,6 +1,7 @@
 import http from 'http';
 import app from './app.js';
 import { connectDB } from './config/db.js';
+import { getDispatchedOtpForTest } from './services/notificationService.js';
 
 async function runTests() {
   await connectDB();
@@ -29,7 +30,9 @@ async function runTests() {
       console.log('✓ Registration Response:', regJson);
 
       const userId = regJson.userId;
-      const devOtp = regJson.devOtp;
+      // Assert zero devOtp leak in API response payload
+      if (regJson.devOtp) throw new Error('Security violation: devOtp leaked in API response!');
+      const dispatchedOtp = getDispatchedOtpForTest('analyst@securepulse.local');
 
       // 3. Test Email Verification
       const verifyRes = await fetch('http://127.0.0.1:5099/api/auth/verify-email', {
@@ -37,7 +40,7 @@ async function runTests() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
-          otp: devOtp,
+          otp: dispatchedOtp,
         }),
       });
       const verifyJson = await verifyRes.json();

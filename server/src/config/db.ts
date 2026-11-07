@@ -1,13 +1,18 @@
 import mongoose from 'mongoose';
 
 export async function connectDB(): Promise<void> {
-  const uri = process.env.MONGODB_URI;
+  // Return immediately if already connected or connecting (crucial for Vercel Serverless Function caching)
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
+
+  const uri = process.env.MONGODB_URI?.trim();
 
   if (uri) {
     try {
       mongoose.set('strictQuery', false);
       await mongoose.connect(uri, {
-        serverSelectionTimeoutMS: 3000,
+        serverSelectionTimeoutMS: 5000,
       });
       console.log(`[Database] MongoDB Atlas connected successfully to: ${uri.replace(/\/\/.*@/, '//***@')}`);
       return;

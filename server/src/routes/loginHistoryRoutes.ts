@@ -15,3 +15,4 @@ router.get('/export', exportLoginHistoryCsv);
 router.get('/:id', getLoginHistoryById);
 
 export default router;
+

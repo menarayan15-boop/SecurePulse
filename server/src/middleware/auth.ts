@@ -74,3 +74,4 @@ export async function requireAuth(req: AuthenticatedRequest, res: Response, next
     res.status(401).json({ success: false, message: 'Invalid authentication token.' });
   }
 }
+

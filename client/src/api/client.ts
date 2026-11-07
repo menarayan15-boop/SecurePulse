@@ -3,7 +3,7 @@
  * Wraps native fetch with credentials: 'include', CSRF/Cookie support, and auto-refresh
  */
 
-const API_BASE = '/api';
+const API_BASE = (import.meta as any).env?.VITE_API_URL?.replace(/\/$/, '') || '/api';
 
 interface RequestOptions extends RequestInit {
   retryOn401?: boolean;
@@ -77,7 +77,7 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({ challengeToken, otp, trustThisDevice }),
     }),
-  resendOtp: (payload: { challengeToken?: string; userId?: string; purpose?: string }) =>
+  resendOtp: (payload: { challengeToken?: string; userId?: string; email?: string; purpose?: string }) =>
     apiRequest('/auth/resend-otp', { method: 'POST', body: JSON.stringify(payload) }),
   logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   forgotPassword: (identifier: string) =>
@@ -151,3 +151,4 @@ export const securityApi = {
   verifyRecovery: (body: any) =>
     apiRequest('/security/recover/verify', { method: 'POST', body: JSON.stringify(body) }),
 };
+

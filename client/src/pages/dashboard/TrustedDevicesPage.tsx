@@ -239,3 +239,4 @@ export const TrustedDevicesPage: React.FC = () => {
     </div>
   );
 };
+

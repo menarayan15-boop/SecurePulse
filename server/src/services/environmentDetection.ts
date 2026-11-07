@@ -105,3 +105,4 @@ export function extractEnvironmentInfo(req: Request): ILoginEnvironment {
     userAgent: userAgentString,
   };
 }
+

@@ -99,3 +99,4 @@ export const SecurityBadge: React.FC<BadgeProps> = ({ type, value, size = 'sm' }
     </span>
   );
 };
+

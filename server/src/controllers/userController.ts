@@ -229,3 +229,4 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
     res.status(500).json({ success: false, message: 'Failed to process account deletion.' });
   }
 }
+

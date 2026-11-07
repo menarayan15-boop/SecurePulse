@@ -40,23 +40,13 @@ export async function analyzeLoginRisk(
     .limit(30)
     .lean();
 
-  // If this is the user's first ever login, risk is minimal baseline (or 0)
-  if (pastSuccessfulLogins.length === 0) {
-    return {
-      riskScore: 0,
-      riskLevel: 'low',
-      factors: ['First login for newly registered account'],
-      isNewBrowser: true,
-      isNewDevice: true,
-      isNewIp: true,
-      isNewLocation: true,
-      isSuspicious: false,
-      requiresOtp: false, // User already verified email during registration
-    };
-  }
-
   let riskScore = 0;
   const factors: string[] = [];
+
+  // If this is the user's first login after registration, baseline check
+  if (pastSuccessfulLogins.length === 0) {
+    factors.push('Security Verification: Two-factor authentication required for session authentication');
+  }
 
   // 3. Check for recent failed attempts within last 15 minutes
   const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
@@ -73,7 +63,7 @@ export async function analyzeLoginRisk(
 
   // 4. Compare Browser
   const knownBrowsers = new Set(pastSuccessfulLogins.map((l: any) => l.browserName.toLowerCase()));
-  const isNewBrowser = !knownBrowsers.has(currentEnv.browserName.toLowerCase());
+  const isNewBrowser = pastSuccessfulLogins.length > 0 && !knownBrowsers.has(currentEnv.browserName.toLowerCase());
   if (isNewBrowser) {
     riskScore += 20;
     factors.push(`Unrecognized browser (${currentEnv.browserName})`);
@@ -84,7 +74,7 @@ export async function analyzeLoginRisk(
     pastSuccessfulLogins.map((l: any) => `${l.deviceType}-${l.operatingSystem}`.toLowerCase())
   );
   const currentDeviceSig = `${currentEnv.deviceType}-${currentEnv.operatingSystem}`.toLowerCase();
-  const isNewDevice = !knownDevices.has(currentDeviceSig);
+  const isNewDevice = pastSuccessfulLogins.length > 0 && !knownDevices.has(currentDeviceSig);
   if (isNewDevice) {
     riskScore += 25;
     factors.push(`Unfamiliar device (${currentEnv.deviceType} running ${currentEnv.operatingSystem})`);
@@ -92,7 +82,7 @@ export async function analyzeLoginRisk(
 
   // 6. Compare Public IP
   const knownIps = new Set(pastSuccessfulLogins.map((l: any) => l.ipAddress));
-  const isNewIp = !knownIps.has(currentEnv.ipAddress);
+  const isNewIp = pastSuccessfulLogins.length > 0 && !knownIps.has(currentEnv.ipAddress);
   if (isNewIp) {
     riskScore += 15;
     factors.push(`New network/IP address (${currentEnv.ipAddress})`);
@@ -103,7 +93,7 @@ export async function analyzeLoginRisk(
     pastSuccessfulLogins.map((l: any) => `${l.city}, ${l.state}`.toLowerCase())
   );
   const currentLocationSig = `${currentEnv.city}, ${currentEnv.state}`.toLowerCase();
-  const isNewLocation = !knownLocations.has(currentLocationSig);
+  const isNewLocation = pastSuccessfulLogins.length > 0 && !knownLocations.has(currentLocationSig);
   if (isNewLocation) {
     riskScore += 25;
     factors.push(`New geographical location (${currentEnv.city}, ${currentEnv.country})`);
@@ -124,19 +114,21 @@ export async function analyzeLoginRisk(
 
   // Evaluate if OTP challenge is required:
   // Trusted device reduces risk for ordinary changes (e.g. IP change while traveling)
-  let requiresOtp = false;
+  let requiresOtp = true;
 
   if (hasValidTrustedDevice) {
     // If device is trusted, only trigger OTP if risk is high/critical or multiple failed attempts
     if (riskScore >= 50 || recentFailures >= 3) {
       requiresOtp = true;
       factors.push('Trusted device bypassed normal challenge, but elevated risk threshold triggered verification');
+    } else {
+      requiresOtp = false;
     }
   } else {
-    // Untrusted device: require OTP if risk >= 25 (e.g. new browser, new device, or new city)
-    // or if user enforces unfamiliar device OTP
-    if (riskScore >= 25 || user.securitySettings?.unfamiliarDeviceOtpEnforced) {
-      requiresOtp = true;
+    // Untrusted device: always require OTP verification
+    requiresOtp = true;
+    if (factors.length === 0) {
+      factors.push('Security Verification: Two-factor authentication required for untrusted session');
     }
   }
 

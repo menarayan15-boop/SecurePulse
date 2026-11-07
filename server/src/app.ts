@@ -3,6 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
+import { connectDB } from './config/db.js';
 
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -12,8 +16,17 @@ import sessionRoutes from './routes/sessionRoutes.js';
 import securityRoutes from './routes/securityRoutes.js';
 import { calculateThemeForIST } from './utils/themeEngine.js';
 import { extractEnvironmentInfo } from './services/environmentDetection.js';
+import { verifyEmailServiceStatus } from './services/notificationService.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Robust multi-path dotenv loading (supports Vercel, Monorepo root, server subfolder)
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'server/.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const app = express();
 
@@ -54,8 +67,20 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// Serverless DB Auto-Connect (ensures warm connection on Vercel Function invocations)
+app.use(async (req: Request, res: Response, next: NextFunction) => {
+  if (mongoose.connection.readyState === 0) {
+    try {
+      await connectDB();
+    } catch (err: any) {
+      console.error('[Serverless DB Connect Error]:', err.message);
+    }
+  }
+  next();
+});
+
 // Server health check & IST time probe
-app.get('/api/health', (req: Request, res: Response) => {
+app.get(['/api/health', '/health'], (req: Request, res: Response) => {
   const theme = calculateThemeForIST('auto');
   const env = extractEnvironmentInfo(req);
 
@@ -75,20 +100,26 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
+// Email delivery diagnostic check
+app.get(['/api/health/email-status', '/health/email-status'], async (req: Request, res: Response) => {
+  const status = await verifyEmailServiceStatus();
+  res.status(status.configured && (status.verified !== false) ? 200 : 503).json(status);
+});
+
 // Current IST Time calculation endpoint for frontend adaptive engine
-app.get('/api/theme-info', (req: Request, res: Response) => {
+app.get(['/api/theme-info', '/theme-info'], (req: Request, res: Response) => {
   const pref = (req.query.preference as 'auto' | 'light' | 'dark') || 'auto';
   const calculation = calculateThemeForIST(pref);
   res.status(200).json({ success: true, ...calculation });
 });
 
-// Mount Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/login-history', loginHistoryRoutes);
-app.use('/api/devices', deviceRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/security', securityRoutes);
+// Mount Routes (Supports both /api/* and /* paths seamlessly for local & Vercel serverless rewrites)
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/users', '/users'], userRoutes);
+app.use(['/api/login-history', '/login-history'], loginHistoryRoutes);
+app.use(['/api/devices', '/devices'], deviceRoutes);
+app.use(['/api/sessions', '/sessions'], sessionRoutes);
+app.use(['/api/security', '/security'], securityRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
@@ -105,3 +136,4 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 export default app;
+

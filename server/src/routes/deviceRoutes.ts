@@ -17,3 +17,4 @@ router.delete('/:id', removeTrustedDevice);
 router.delete('/', removeAllTrustedDevices);
 
 export default router;
+

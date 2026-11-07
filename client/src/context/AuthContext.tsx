@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fallback
     } finally {
       setUser(null);
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 
@@ -86,3 +86,4 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+

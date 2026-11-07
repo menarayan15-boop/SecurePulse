@@ -12,6 +12,9 @@ import {
   LogOut,
   Clock,
   CheckCircle,
+  LogIn,
+  UserPlus,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,7 +22,7 @@ import { securityApi } from '../../api/client';
 import { ISecurityAlert } from '../../types';
 
 interface NavbarProps {
-  onToggleSidebar: () => void;
+  onToggleSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
@@ -54,8 +57,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  // Poll recent alerts
+  // Poll recent alerts only if user is authenticated
   useEffect(() => {
+    if (!user) {
+      setUnreadAlerts([]);
+      setUnreadCount(0);
+      return;
+    }
     const fetchAlerts = async () => {
       try {
         const res = await securityApi.getAlerts(true);
@@ -70,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
     fetchAlerts();
     const interval = setInterval(fetchAlerts, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const handleMarkAllRead = async () => {
     try {
@@ -83,19 +91,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white/80 dark:bg-cyber-surface/80 backdrop-blur-md border-b border-gray-200 dark:border-cyber-border transition-colors duration-200">
+    <header className="sticky top-0 z-30 h-16 bg-white/85 dark:bg-cyber-surface/85 backdrop-blur-md border-b border-gray-200 dark:border-cyber-border transition-colors duration-200">
       <div className="h-full px-4 sm:px-6 flex items-center justify-between">
         {/* Left: Mobile hamburger & Logo */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={onToggleSidebar}
-            className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-cyber-card lg:hidden transition-colors"
-            aria-label="Toggle menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 rounded-xl text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-cyber-card lg:hidden transition-colors"
+              aria-label="Toggle menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
 
-          <Link to="/" className="flex items-center gap-2.5">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 p-0.5 shadow-md shadow-emerald-500/20">
               <div className="w-full h-full bg-cyber-bg rounded-[10px] flex items-center justify-center">
                 <img src="/shield-pulse.svg" alt="SecurePulse" className="w-6 h-6" />
@@ -110,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
         </div>
 
         {/* Center: Indian Standard Time Ticker (Adaptive Theme Rule indicator) */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100/80 dark:bg-cyber-card/80 border border-gray-200 dark:border-cyber-border text-xs text-gray-600 dark:text-gray-300">
+        <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-100/80 dark:bg-cyber-card/80 border border-gray-200 dark:border-cyber-border text-xs text-gray-600 dark:text-gray-300">
           <Clock className="w-3.5 h-3.5 text-emerald-500" />
           <span>{istTime}</span>
           <span className="text-gray-300 dark:text-gray-600">•</span>
@@ -119,7 +129,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           </span>
         </div>
 
-        {/* Right: Theme Switcher, Alerts & Profile */}
+        {/* Right: Theme Switcher, Alerts, and Login / Profile Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Theme Selector Dropdown */}
           <div className="relative" ref={themeRef}>
@@ -198,127 +208,161 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
             )}
           </div>
 
-          {/* Security Alerts Dropdown */}
-          <div className="relative" ref={alertsRef}>
-            <button
-              onClick={() => setAlertsDropdownOpen(!alertsDropdownOpen)}
-              className="p-2 rounded-xl text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-cyber-card transition-colors relative"
-              title="Security Alerts"
-            >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
+          {/* If user is NOT logged in: Render clearly visible Login button in top-right */}
+          {!user ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/35 transition-all duration-150 border border-emerald-400/30"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Log In</span>
+              </Link>
 
-            {alertsDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border shadow-2xl p-3 z-50 text-xs">
-                <div className="flex items-center justify-between px-2 pb-2 mb-2 border-b border-gray-100 dark:border-cyber-border">
-                  <span className="font-bold text-gray-900 dark:text-gray-100">
-                    Security Alerts ({unreadCount} unread)
-                  </span>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={handleMarkAllRead}
-                      className="text-emerald-600 dark:text-emerald-400 hover:underline text-[11px]"
-                    >
-                      Clear All
-                    </button>
-                  )}
-                </div>
+              <Link
+                to="/register"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-cyber-card dark:hover:bg-cyber-surface border border-gray-200 dark:border-cyber-border text-gray-800 dark:text-gray-200 font-semibold text-xs sm:text-sm transition-all"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Create Account</span>
+              </Link>
+            </div>
+          ) : (
+            /* If user IS logged in: Render Dashboard shortcut, Alerts, & Profile Dropdown */
+            <>
+              <Link
+                to="/dashboard"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 font-bold text-xs hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Dashboard</span>
+              </Link>
 
-                <div className="space-y-2 max-h-72 overflow-y-auto">
-                  {unreadAlerts.length === 0 ? (
-                    <div className="py-6 text-center text-gray-400">No unread security alerts.</div>
-                  ) : (
-                    unreadAlerts.map((alert) => (
-                      <div
-                        key={alert._id}
-                        className="p-2.5 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border"
-                      >
-                        <div className="flex items-center justify-between font-semibold text-gray-800 dark:text-gray-200">
-                          <span>{alert.title}</span>
-                          <span className="text-[10px] text-gray-400">
-                            {new Date(alert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-                          {alert.description}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="pt-2 mt-2 border-t border-gray-100 dark:border-cyber-border text-center">
-                  <Link
-                    to="/alerts"
-                    onClick={() => setAlertsDropdownOpen(false)}
-                    className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold text-xs"
-                  >
-                    View All Security Alerts →
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* User Profile Dropdown */}
-          <div className="relative" ref={profileRef}>
-            <button
-              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-              className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-cyber-card transition-colors"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold text-xs flex items-center justify-center shadow-sm">
-                {user?.fullName?.charAt(0) || 'U'}
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-            </button>
-
-            {profileDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border shadow-2xl p-2 z-50 text-xs">
-                <div className="px-3 py-2 border-b border-gray-100 dark:border-cyber-border mb-1">
-                  <div className="font-bold text-gray-900 dark:text-gray-100 truncate">{user?.fullName}</div>
-                  <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">@{user?.username}</div>
-                </div>
-
-                <Link
-                  to="/profile"
-                  onClick={() => setProfileDropdownOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-cyber-card transition-colors"
-                >
-                  <User className="w-4 h-4 text-emerald-500" />
-                  <span>My Profile</span>
-                </Link>
-
-                <Link
-                  to="/settings"
-                  onClick={() => setProfileDropdownOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-cyber-card transition-colors"
-                >
-                  <Shield className="w-4 h-4 text-emerald-500" />
-                  <span>Security Settings</span>
-                </Link>
-
-                <div className="my-1 border-t border-gray-100 dark:border-cyber-border" />
-
+              {/* Security Alerts Dropdown */}
+              <div className="relative" ref={alertsRef}>
                 <button
-                  onClick={() => {
-                    setProfileDropdownOpen(false);
-                    logout();
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors font-semibold"
+                  onClick={() => setAlertsDropdownOpen(!alertsDropdownOpen)}
+                  className="p-2 rounded-xl text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-cyber-card transition-colors relative"
+                  title="Security Alerts"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>Log Out</span>
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </button>
+
+                {alertsDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border shadow-2xl p-3 z-50 text-xs">
+                    <div className="flex items-center justify-between px-2 pb-2 mb-2 border-b border-gray-100 dark:border-cyber-border">
+                      <span className="font-bold text-gray-900 dark:text-gray-100">
+                        Security Alerts ({unreadCount} unread)
+                      </span>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllRead}
+                          className="text-emerald-600 dark:text-emerald-400 hover:underline text-[11px]"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                      {unreadAlerts.length === 0 ? (
+                        <div className="py-6 text-center text-gray-400">No unread security alerts.</div>
+                      ) : (
+                        unreadAlerts.map((alert) => (
+                          <div
+                            key={alert._id}
+                            className="p-2.5 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border"
+                          >
+                            <div className="flex items-center justify-between font-semibold text-gray-800 dark:text-gray-200">
+                              <span>{alert.title}</span>
+                              <span className="text-[10px] text-gray-400">
+                                {new Date(alert.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                              {alert.description}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="pt-2 mt-2 border-t border-gray-100 dark:border-cyber-border text-center">
+                      <Link
+                        to="/alerts"
+                        onClick={() => setAlertsDropdownOpen(false)}
+                        className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold text-xs"
+                      >
+                        View All Security Alerts →
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* User Profile Dropdown */}
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-cyber-card transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                    {user?.fullName?.charAt(0) || 'U'}
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
+                </button>
+
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border shadow-2xl p-2 z-50 text-xs">
+                    <div className="px-3 py-2 border-b border-gray-100 dark:border-cyber-border mb-1">
+                      <div className="font-bold text-gray-900 dark:text-gray-100 truncate">{user?.fullName}</div>
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">@{user?.username}</div>
+                    </div>
+
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-cyber-card transition-colors"
+                    >
+                      <User className="w-4 h-4 text-emerald-500" />
+                      <span>My Profile</span>
+                    </Link>
+
+                    <Link
+                      to="/security"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-cyber-card transition-colors"
+                    >
+                      <Shield className="w-4 h-4 text-emerald-500" />
+                      <span>Security Settings</span>
+                    </Link>
+
+                    <div className="my-1 border-t border-gray-100 dark:border-cyber-border" />
+
+                    <button
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors font-semibold"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </header>
   );
 };
+
+

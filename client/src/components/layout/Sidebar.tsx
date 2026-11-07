@@ -24,12 +24,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const [lockError, setLockError] = useState<string | null>(null);
 
   const navLinks = [
-    { to: '/', label: 'Overview', icon: LayoutDashboard },
+    { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { to: '/activity', label: 'Login Activity', icon: History },
     { to: '/devices', label: 'Trusted Devices', icon: Laptop },
     { to: '/sessions', label: 'Active Sessions', icon: Radio },
     { to: '/alerts', label: 'Security Alerts', icon: BellRing },
-    { to: '/settings', label: 'Security Settings', icon: Sliders },
+    { to: '/security', label: 'Security Settings', icon: Sliders },
     { to: '/profile', label: 'My Profile', icon: UserCheck },
   ];
 
@@ -122,3 +122,4 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     </>
   );
 };
+

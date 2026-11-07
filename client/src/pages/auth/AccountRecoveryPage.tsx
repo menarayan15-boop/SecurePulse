@@ -16,7 +16,6 @@ export const AccountRecoveryPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -32,11 +31,14 @@ export const AccountRecoveryPage: React.FC = () => {
       if (res.success && res.recoveryChallenge) {
         setRecoveryChallenge(res.recoveryChallenge);
         setMaskedEmail(res.maskedEmail);
-        if (res.devOtp) setDevOtpHint(res.devOtp);
         setStep('verify');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to dispatch account unlock passcode.');
+      if (err.status === 503) {
+        setErrorMessage(err.message || "We couldn't send your verification code. Please try again.");
+      } else {
+        setErrorMessage(err.message || 'Failed to dispatch account unlock passcode.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +79,11 @@ export const AccountRecoveryPage: React.FC = () => {
         }, 2500);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Recovery verification failed. Passcode may have expired.');
+      if (err.message?.includes('expired') || err.data?.isExpired) {
+        setErrorMessage('Your verification code has expired.');
+      } else {
+        setErrorMessage(err.message || 'Invalid verification code.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -107,15 +113,6 @@ export const AccountRecoveryPage: React.FC = () => {
           <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
             <CheckCircle className="w-4 h-4 flex-shrink-0 text-emerald-500" />
             <span>{successMessage}</span>
-          </div>
-        )}
-
-        {devOtpHint && (
-          <div className="mb-4 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/50 text-emerald-800 dark:text-emerald-300 text-xs flex items-center justify-between">
-            <span className="font-medium">Dev Unlock Code:</span>
-            <span className="font-mono font-bold tracking-widest text-sm bg-white dark:bg-cyber-card px-2 py-0.5 rounded border border-emerald-300">
-              {devOtpHint}
-            </span>
           </div>
         )}
 
@@ -163,8 +160,8 @@ export const AccountRecoveryPage: React.FC = () => {
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">
                 6-Digit Unlock Passcode
               </label>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center mb-2">
-                Sent to: <strong className="font-mono text-gray-800 dark:text-gray-200">{maskedEmail}</strong>
+              <p className="text-xs text-gray-600 dark:text-gray-300 text-center mb-2">
+                Your verification code has been sent to your registered email. Please check your inbox and spam folder: <strong className="font-mono text-gray-800 dark:text-gray-200">{maskedEmail}</strong>
               </p>
               <OtpInput value={otp} onChange={setOtp} autoFocus length={6} disabled={isLoading} />
             </div>
@@ -226,3 +223,4 @@ export const AccountRecoveryPage: React.FC = () => {
     </div>
   );
 };
+

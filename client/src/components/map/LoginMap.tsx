@@ -135,3 +135,4 @@ export const LoginMap: React.FC<Props> = ({ logins, onSelectLogin }) => {
     </div>
   );
 };
+

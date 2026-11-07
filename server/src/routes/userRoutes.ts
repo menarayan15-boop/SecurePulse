@@ -19,3 +19,4 @@ router.put('/security-settings', updateSecuritySettings);
 router.delete('/account', deleteAccount);
 
 export default router;
+

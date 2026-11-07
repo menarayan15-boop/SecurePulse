@@ -134,3 +134,4 @@ export interface IHealthScoreData {
   trustedDevicesCount: number;
   recentFailures: number;
 }
+

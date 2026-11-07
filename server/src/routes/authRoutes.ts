@@ -9,11 +9,13 @@ import {
   logout,
   forgotPassword,
   resetPassword,
+  getAuthDiagnostics,
 } from '../controllers/authController.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
+router.get('/diagnostic', getAuthDiagnostics);
 router.post('/register', authLimiter, register);
 router.post('/verify-email', otpLimiter, verifyEmail);
 router.post('/login', authLimiter, login);
@@ -25,3 +27,4 @@ router.post('/forgot-password', authLimiter, forgotPassword);
 router.post('/reset-password', otpLimiter, resetPassword);
 
 export default router;
+
