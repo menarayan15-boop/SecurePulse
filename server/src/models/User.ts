@@ -91,6 +91,21 @@ const UserSchema = new Schema<UserDocument>(
       default: 'active',
       index: true,
     },
+    recoveryEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: '',
+    },
+    recoveryEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    preferredAuthMethod: {
+      type: String,
+      enum: ['password', 'passkey'],
+      default: 'password',
+    },
     lockedAt: {
       type: Date,
     },

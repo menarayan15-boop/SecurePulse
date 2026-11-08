@@ -135,3 +135,133 @@ export interface IHealthScoreData {
   recentFailures: number;
 }
 
+export interface IRiskScoreBreakdownItem {
+  factor: string;
+  weight: number;
+  score: number;
+  description: string;
+}
+
+export interface IRiskEvaluationItem {
+  id: string;
+  timestamp: string;
+  riskScore: number;
+  riskFactors: string[];
+  riskScoreBreakdown?: IRiskScoreBreakdownItem[];
+  ipAddress: string;
+  city: string;
+  country: string;
+  deviceType: string;
+  browserName: string;
+  operatingSystem: string;
+  status: string;
+  impossibleTravel?: {
+    detected: boolean;
+    distanceKm: number;
+    speedKmPerHour: number;
+    fromLocation: string;
+    toLocation: string;
+    timeDeltaMinutes: number;
+  };
+}
+
+export interface IRiskAnalyticsData {
+  avgRiskScore: number;
+  currentSessionScore: number;
+  overallRiskLevel: 'low' | 'medium' | 'high' | 'critical';
+  totalEvaluatedLogins: number;
+  distribution: { low: number; medium: number; high: number; critical: number };
+  topFactors: Array<{ factor: string; count: number }>;
+  engineStatus: string;
+  configurableWeights: Array<{ name: string; maxWeight: number; active: boolean }>;
+}
+
+export interface IImpossibleTravelAlertItem {
+  _id: string;
+  fromCity: string;
+  fromCountry: string;
+  fromCoordinates: { lat: number; lng: number };
+  toCity: string;
+  toCountry: string;
+  toCoordinates: { lat: number; lng: number };
+  distanceKm: number;
+  timeDeltaMinutes: number;
+  speedKmPerHour: number;
+  status: 'pending' | 'resolved_user' | 'reported_suspicious';
+  createdAt: string;
+}
+
+export interface IPasskeyItem {
+  id: string;
+  credentialId: string;
+  name: string;
+  counter: number;
+  transports: string[];
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+export interface IAccountProtectionData {
+  protectionScore: number;
+  protectionTier: 'Fortified' | 'Strong' | 'Moderate' | 'Vulnerable';
+  metrics: {
+    passkeysCount: number;
+    recoveryCodesCount: number;
+    trustedDevicesCount: number;
+    activeSessionsCount: number;
+    hasRecoveryEmail: boolean;
+  };
+  checklist: Array<{
+    id: string;
+    title: string;
+    status: 'passed' | 'recommended' | 'optional' | 'failed' | 'warning';
+    points: number;
+  }>;
+  recentEvents: Array<{
+    _id: string;
+    eventType: string;
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
+    title: string;
+    description: string;
+    ipAddress: string;
+    browser: string;
+    actionRequired?: string;
+    createdAt: string;
+  }>;
+}
+
+export interface ITimelineItem {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  category: 'login' | 'security' | 'suspicious' | 'recovery';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'success' | 'warning' | 'danger' | 'info';
+  location: string;
+  device: string;
+  ipAddress: string;
+  actionRecommendation?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ITimelineResponse {
+  items: ITimelineItem[];
+  total: number;
+  counts: {
+    all: number;
+    login: number;
+    security: number;
+    suspicious: number;
+    recovery: number;
+  };
+}
+
+export interface IRecoveryCodesStats {
+  hasGeneratedCodes: boolean;
+  totalCount: number;
+  usedCount: number;
+  remainingCount: number;
+}
+
+

@@ -23,6 +23,15 @@ export interface ILoginHistoryDoc extends Document {
   otpStatus: 'not_required' | 'pending' | 'verified' | 'failed';
   riskScore: number;
   riskFactors: string[];
+  riskScoreBreakdown?: Array<{ factor: string; weight: number; score: number; description: string }>;
+  impossibleTravel?: {
+    detected: boolean;
+    distanceKm: number;
+    speedKmPerHour: number;
+    fromLocation: string;
+    toLocation: string;
+    timeDeltaMinutes: number;
+  };
   failureReason?: string;
   isNewDevice: boolean;
   isTrustedDevice: boolean;
@@ -115,6 +124,18 @@ const LoginHistorySchema = new Schema<ILoginHistoryDoc>(
     riskFactors: {
       type: [String],
       default: [],
+    },
+    riskScoreBreakdown: {
+      type: Schema.Types.Mixed,
+      default: [],
+    },
+    impossibleTravel: {
+      detected: { type: Boolean, default: false },
+      distanceKm: { type: Number, default: 0 },
+      speedKmPerHour: { type: Number, default: 0 },
+      fromLocation: { type: String, default: '' },
+      toLocation: { type: String, default: '' },
+      timeDeltaMinutes: { type: Number, default: 0 },
     },
     failureReason: {
       type: String,

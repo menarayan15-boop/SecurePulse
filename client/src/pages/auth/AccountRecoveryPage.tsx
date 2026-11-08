@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShieldAlert, KeyRound, Lock, Eye, EyeOff, AlertTriangle, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, KeyRound, Lock, Eye, EyeOff, AlertTriangle, CheckCircle, ArrowRight, ArrowLeft, Hash } from 'lucide-react';
 import { securityApi } from '../../api/client';
 import { OtpInput } from '../../components/common/OtpInput';
 import { PasswordStrengthMeter } from '../../components/common/PasswordStrengthMeter';
@@ -8,8 +8,10 @@ import { PasswordStrengthMeter } from '../../components/common/PasswordStrengthM
 export const AccountRecoveryPage: React.FC = () => {
   const navigate = useNavigate();
 
+  const [recoveryMethod, setRecoveryMethod] = useState<'email' | 'backup_code'>('email');
   const [step, setStep] = useState<'request' | 'verify'>('request');
   const [identifier, setIdentifier] = useState('');
+  const [backupCode, setBackupCode] = useState('');
   const [recoveryChallenge, setRecoveryChallenge] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -20,6 +22,17 @@ export const AccountRecoveryPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Auto-format backup code as XXXX-XXXX-XXXX
+  const handleBackupCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (raw.length > 12) raw = raw.slice(0, 12);
+    const parts = [];
+    for (let i = 0; i < raw.length; i += 4) {
+      parts.push(raw.slice(i, i + 4));
+    }
+    setBackupCode(parts.join('-'));
+  };
 
   const handleRequestRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +102,43 @@ export const AccountRecoveryPage: React.FC = () => {
     }
   };
 
+  const handleBackupCodeRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    const cleanCode = backupCode.trim();
+    if (cleanCode.length < 14) {
+      setErrorMessage('Please enter a valid 12-character emergency recovery code (XXXX-XXXX-XXXX).');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage('New passwords do not match.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setErrorMessage('New password must be at least 8 characters long.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const res = await securityApi.verifyBackupCode(cleanCode, identifier.trim(), newPassword);
+      if (res.success) {
+        setSuccessMessage('Emergency recovery verified! Your account is unlocked. Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2500);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Invalid recovery code. Please check and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-cyber-bg transition-colors duration-200">
       <div className="max-w-md w-full bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-3xl p-6 sm:p-8 shadow-2xl relative">
@@ -100,6 +150,39 @@ export const AccountRecoveryPage: React.FC = () => {
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Restore access to your account following emergency lockdown or security freeze.
           </p>
+        </div>
+
+        {/* Method Toggle */}
+        <div className="flex rounded-xl bg-gray-100 dark:bg-cyber-card p-1 mb-6 border border-gray-200 dark:border-cyber-border text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => {
+              setRecoveryMethod('email');
+              setStep('request');
+              setErrorMessage(null);
+            }}
+            className={`flex-1 py-2 rounded-lg transition-all ${
+              recoveryMethod === 'email'
+                ? 'bg-white dark:bg-cyber-surface text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+            }`}
+          >
+            Email Passcode
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setRecoveryMethod('backup_code');
+              setErrorMessage(null);
+            }}
+            className={`flex-1 py-2 rounded-lg transition-all ${
+              recoveryMethod === 'backup_code'
+                ? 'bg-white dark:bg-cyber-surface text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+            }`}
+          >
+            Backup Recovery Code
+          </button>
         </div>
 
         {errorMessage && (
@@ -116,7 +199,115 @@ export const AccountRecoveryPage: React.FC = () => {
           </div>
         )}
 
-        {step === 'request' ? (
+        {recoveryMethod === 'backup_code' ? (
+          /* ========================================================================= */
+          /* METHOD 2: 12-CHARACTER BACKUP RECOVERY CODE                              */
+          /* ========================================================================= */
+          <form onSubmit={handleBackupCodeRecovery} className="space-y-4 animate-fade-in">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Your Email Address or Username
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="analyst@securepulse.local"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-300 dark:border-cyber-border bg-gray-50/50 dark:bg-cyber-card text-gray-900 dark:text-gray-100 text-sm focus:border-rose-500 outline-none"
+                />
+                <KeyRound className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                One-Time Backup Recovery Code
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={backupCode}
+                  onChange={handleBackupCodeChange}
+                  placeholder="XXXX-XXXX-XXXX"
+                  maxLength={14}
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl font-mono tracking-wider uppercase border border-gray-300 dark:border-cyber-border bg-gray-50/50 dark:bg-cyber-card text-gray-900 dark:text-gray-100 text-sm focus:border-rose-500 outline-none"
+                />
+                <Hash className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+              </div>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+                Enter any unused 12-character emergency code generated from your Recovery Center.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                New Secure Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full pl-9 pr-9 py-2 rounded-xl border border-gray-300 dark:border-cyber-border bg-gray-50/50 dark:bg-cyber-card text-gray-900 dark:text-gray-100 text-xs focus:border-emerald-500 outline-none"
+                />
+                <Lock className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full pl-9 pr-9 py-2 rounded-xl border border-gray-300 dark:border-cyber-border bg-gray-50/50 dark:bg-cyber-card text-gray-900 dark:text-gray-100 text-xs focus:border-emerald-500 outline-none"
+                />
+                <Lock className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+              </div>
+            </div>
+
+            <PasswordStrengthMeter password={newPassword} />
+
+            <button
+              type="submit"
+              disabled={isLoading || backupCode.length < 14}
+              className="w-full py-2.5 px-4 mt-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 disabled:opacity-50 cursor-pointer"
+            >
+              {isLoading ? 'Verifying Emergency Code...' : 'Unlock Account with Backup Key'}
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <div className="text-center pt-2">
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Return to login</span>
+              </Link>
+            </div>
+          </form>
+        ) : step === 'request' ? (
+          /* ========================================================================= */
+          /* METHOD 1 - STEP 1: REQUEST EMAIL OTP                                      */
+          /* ========================================================================= */
           <form onSubmit={handleRequestRecovery} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
@@ -138,7 +329,7 @@ export const AccountRecoveryPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20 disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? 'Dispatching Unlock Code...' : 'Dispatch Account Unlock Passcode'}
               <ArrowRight className="w-4 h-4" />
@@ -155,6 +346,9 @@ export const AccountRecoveryPage: React.FC = () => {
             </div>
           </form>
         ) : (
+          /* ========================================================================= */
+          /* METHOD 1 - STEP 2: VERIFY EMAIL OTP & RESET PASSWORD                      */
+          /* ========================================================================= */
           <form onSubmit={handleVerifyRecovery} className="space-y-4 animate-fade-in">
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">
@@ -212,7 +406,7 @@ export const AccountRecoveryPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading || otp.length !== 6}
-              className="w-full py-2.5 px-4 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+              className="w-full py-2.5 px-4 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? 'Unlocking Account...' : 'Unlock Account & Set New Password'}
               <ArrowRight className="w-4 h-4" />
@@ -223,4 +417,3 @@ export const AccountRecoveryPage: React.FC = () => {
     </div>
   );
 };
-

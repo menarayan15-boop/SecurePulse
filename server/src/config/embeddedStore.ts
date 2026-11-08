@@ -191,6 +191,22 @@ export class EmbeddedCollection<T extends Record<string, any>> {
     return this.wrapDoc(item);
   }
 
+  async insertMany(docs: Partial<T>[]): Promise<any[]> {
+    const created: any[] = [];
+    for (const d of docs) {
+      const item: any = {
+        _id: (d as any)._id || crypto.randomBytes(12).toString('hex'),
+        createdAt: (d as any).createdAt || new Date(),
+        updatedAt: (d as any).updatedAt || new Date(),
+        ...d,
+      };
+      this.items.push(item);
+      created.push(this.wrapDoc(item));
+    }
+    this.saveToFile();
+    return created;
+  }
+
   find(filter: Record<string, any> = {}): any {
     let matched = this.items.filter((item) => this.matchFilter(item, filter));
 

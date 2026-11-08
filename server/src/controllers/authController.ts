@@ -900,6 +900,8 @@ export async function login(req: Request, res: Response): Promise<void> {
       otpStatus: 'not_required',
       riskScore: riskAnalysis.riskScore,
       riskFactors: riskAnalysis.factors,
+      riskScoreBreakdown: riskAnalysis.scoreBreakdown || [],
+      impossibleTravel: riskAnalysis.impossibleTravel || undefined,
       isNewDevice: false,
       isTrustedDevice: Boolean(trustedDeviceCookie),
     });
@@ -1115,6 +1117,8 @@ export async function verifyLoginOtp(req: Request, res: Response): Promise<void>
       otpStatus: 'verified',
       riskScore: verification.metadata?.riskAnalysis?.riskScore || 25,
       riskFactors: verification.metadata?.riskAnalysis?.factors || ['Verified via 6-digit OTP challenge'],
+      riskScoreBreakdown: verification.metadata?.riskAnalysis?.scoreBreakdown || [],
+      impossibleTravel: verification.metadata?.riskAnalysis?.impossibleTravel || undefined,
       isNewDevice: verification.metadata?.riskAnalysis?.isNewDevice ?? true,
       isTrustedDevice: Boolean(trustThisDevice),
     });

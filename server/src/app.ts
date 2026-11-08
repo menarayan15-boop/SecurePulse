@@ -14,6 +14,7 @@ import loginHistoryRoutes from './routes/loginHistoryRoutes.js';
 import deviceRoutes from './routes/deviceRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import securityRoutes from './routes/securityRoutes.js';
+import passkeyRoutes from './routes/passkeyRoutes.js';
 import { calculateThemeForIST } from './utils/themeEngine.js';
 import { extractEnvironmentInfo } from './services/environmentDetection.js';
 import { verifyEmailServiceStatus } from './services/notificationService.js';
@@ -120,6 +121,7 @@ app.use(['/api/login-history', '/login-history'], loginHistoryRoutes);
 app.use(['/api/devices', '/devices'], deviceRoutes);
 app.use(['/api/sessions', '/sessions'], sessionRoutes);
 app.use(['/api/security', '/security'], securityRoutes);
+app.use(['/api/passkeys', '/passkeys'], passkeyRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

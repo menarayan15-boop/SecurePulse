@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Shield, Lock, User, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, RefreshCw, CheckCircle2, ArrowLeft, Info } from 'lucide-react';
-import { authApi } from '../../api/client';
+import { Shield, Lock, User, Eye, EyeOff, AlertTriangle, ArrowRight, ShieldCheck, RefreshCw, CheckCircle2, ArrowLeft, Info, Fingerprint } from 'lucide-react';
+import { authApi, passkeyApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { OtpInput } from '../../components/common/OtpInput';
 import { SecurityBadge } from '../../components/common/SecurityBadge';
@@ -50,6 +50,89 @@ export const LoginPage: React.FC = () => {
         return prev - 1;
       });
     }, 1000);
+  };
+
+  // Handle Passkey Biometric Sign In
+  const handlePasskeyLogin = async () => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setIsLoading(true);
+
+    try {
+      if (!window.PublicKeyCredential) {
+        throw new Error('Passkeys are not supported on this browser.');
+      }
+
+      const optRes = await passkeyApi.getAuthOptions(identifier.trim());
+      if (!optRes.success || !optRes.options) {
+        throw new Error('Failed to retrieve passkey challenge.');
+      }
+
+      const options = optRes.options;
+
+      const base64UrlToUint8 = (str: string) => {
+        const padding = '='.repeat((4 - (str.length % 4)) % 4);
+        const base64 = (str + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const raw = window.atob(base64);
+        const arr = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; ++i) arr[i] = raw.charCodeAt(i);
+        return arr;
+      };
+
+      const arrayBufToBase64Url = (buf: ArrayBuffer) => {
+        const bytes = new Uint8Array(buf);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+        return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      };
+
+      const getCredential = (await navigator.credentials.get({
+        publicKey: {
+          challenge: base64UrlToUint8(options.challenge) as any,
+          rpId: options.rpId,
+          timeout: options.timeout || 60000,
+          userVerification: options.userVerification || 'preferred',
+          allowCredentials: options.allowCredentials?.map((c: any) => ({
+            id: base64UrlToUint8(c.id) as any,
+            type: 'public-key',
+            transports: c.transports,
+          })),
+        },
+      })) as PublicKeyCredential;
+
+      if (!getCredential) {
+        throw new Error('Authentication cancelled.');
+      }
+
+      const rawId = arrayBufToBase64Url(getCredential.rawId);
+      const resAssertion = getCredential.response as AuthenticatorAssertionResponse;
+
+      const authPayload = {
+        id: getCredential.id,
+        rawId,
+        type: getCredential.type,
+        response: {
+          clientDataJSON: arrayBufToBase64Url(resAssertion.clientDataJSON),
+          authenticatorData: arrayBufToBase64Url(resAssertion.authenticatorData),
+          signature: arrayBufToBase64Url(resAssertion.signature),
+          userHandle: resAssertion.userHandle ? arrayBufToBase64Url(resAssertion.userHandle) : null,
+        },
+      };
+
+      const verifyRes = await passkeyApi.verifyAuth(authPayload);
+      if (verifyRes.success) {
+        loginSuccess(verifyRes.user);
+        navigate(targetDestination, { replace: true });
+      }
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError') {
+        setErrorMessage('Passkey authentication was cancelled.');
+      } else {
+        setErrorMessage(err.message || 'Passkey authentication failed.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle Initial Login
@@ -267,6 +350,25 @@ export const LoginPage: React.FC = () => {
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
+            </button>
+
+            <div className="relative my-3">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200 dark:border-cyber-border" />
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase">
+                <span className="bg-white dark:bg-cyber-surface px-2.5 text-gray-500 font-medium">Or passwordless</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handlePasskeyLogin}
+              disabled={isLoading}
+              className="w-full py-2.5 px-4 rounded-xl border border-gray-200 dark:border-cyber-border hover:border-emerald-500/50 bg-gray-50/70 dark:bg-cyber-card/60 hover:bg-emerald-500/5 text-gray-700 dark:text-gray-200 font-semibold text-xs sm:text-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <Fingerprint className="w-4 h-4 text-emerald-500" />
+              <span>Sign in with Passkey (Biometrics)</span>
             </button>
 
             <div className="text-center pt-4 border-t border-gray-100 dark:border-cyber-border">

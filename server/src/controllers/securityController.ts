@@ -19,6 +19,23 @@ import {
   logSecurityAudit,
 } from '../services/notificationService.js';
 import { calculateThemeForIST } from '../utils/themeEngine.js';
+import { ImpossibleTravelAlert } from '../models/ImpossibleTravelAlert.js';
+import { AccountProtectionEvent } from '../models/AccountProtectionEvent.js';
+import { PasskeyCredential } from '../models/PasskeyCredential.js';
+import { RecoveryCode } from '../models/RecoveryCode.js';
+import {
+  generateBackupCodesForUser,
+  getRecoveryCodeStats,
+  verifyAndBurnRecoveryCode,
+} from '../services/recoveryService.js';
+import {
+  getAccountProtectionOverview,
+  executeEmergencyFreeze,
+} from '../services/accountProtectionService.js';
+import {
+  getPersonalSecurityTimeline,
+  generateTimelineCsv,
+} from '../services/timelineService.js';
 
 export async function getSecurityOverview(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -467,3 +484,410 @@ export async function completeAccountRecovery(req: Request, res: Response): Prom
     res.status(500).json({ success: false, message: 'Failed to complete account recovery.' });
   }
 }
+
+/**
+ * FEATURE 1: AI-Powered Login Risk Analysis Overview
+ */
+export async function getRiskAnalysisOverview(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.userId;
+    const logins = await LoginHistory.find({ userId })
+      .sort({ loginTimestamp: -1 })
+      .limit(50)
+      .lean();
+
+    const totalLogins = logins.length;
+    let totalScore = 0;
+    const distribution = { low: 0, medium: 0, high: 0, critical: 0 };
+    const factorCounts: Record<string, number> = {};
+
+    for (const l of logins) {
+      const s = typeof l.riskScore === 'number' ? l.riskScore : 10;
+      totalScore += s;
+
+      if (s >= 81) distribution.critical++;
+      else if (s >= 61) distribution.high++;
+      else if (s >= 31) distribution.medium++;
+      else distribution.low++;
+
+      if (Array.isArray(l.riskFactors)) {
+        for (const f of l.riskFactors) {
+          factorCounts[f] = (factorCounts[f] || 0) + 1;
+        }
+      }
+    }
+
+    const avgRiskScore = totalLogins > 0 ? Math.round(totalScore / totalLogins) : 10;
+    const currentSessionScore = logins[0]?.riskScore ?? 10;
+
+    let overallRiskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
+    if (avgRiskScore >= 81) overallRiskLevel = 'critical';
+    else if (avgRiskScore >= 61) overallRiskLevel = 'high';
+    else if (avgRiskScore >= 31) overallRiskLevel = 'medium';
+
+    const topFactors = Object.entries(factorCounts)
+      .map(([factor, count]) => ({ factor, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    res.status(200).json({
+      success: true,
+      analytics: {
+        avgRiskScore,
+        currentSessionScore,
+        overallRiskLevel,
+        totalEvaluatedLogins: totalLogins,
+        distribution,
+        topFactors,
+        engineStatus: 'Adaptive Multi-Factor Evaluation Engine Online (Active)',
+        configurableWeights: [
+          { name: 'Impossible Travel Velocity', maxWeight: 40, active: true },
+          { name: 'Authentication Velocity (Failures)', maxWeight: 35, active: true },
+          { name: 'Device Environment Anomaly', maxWeight: 20, active: true },
+          { name: 'Browser Fingerprint Change', maxWeight: 15, active: true },
+          { name: 'Geographical Region Shift', maxWeight: 15, active: true },
+          { name: 'Temporal Pattern (Off-Hours)', maxWeight: 10, active: true },
+          { name: 'Trusted Device Hardware Credit', maxWeight: -25, active: true },
+        ],
+      },
+      recentEvaluations: logins.slice(0, 15).map((l: any) => ({
+        id: l._id,
+        timestamp: l.loginTimestamp,
+        riskScore: l.riskScore,
+        riskFactors: l.riskFactors || [],
+        riskScoreBreakdown: l.riskScoreBreakdown || [],
+        ipAddress: l.ipAddress,
+        city: l.city,
+        country: l.country,
+        deviceType: l.deviceType,
+        browserName: l.browserName,
+        operatingSystem: l.operatingSystem,
+        status: l.loginStatus,
+        impossibleTravel: l.impossibleTravel,
+      })),
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to retrieve risk analysis analytics.' });
+  }
+}
+
+/**
+ * FEATURE 2: Impossible Travel Alerts
+ */
+export async function getImpossibleTravelData(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.userId;
+    const [alerts, recentLoginsWithCoords] = await Promise.all([
+      ImpossibleTravelAlert.find({ userId }).sort({ createdAt: -1 }).limit(50).lean(),
+      LoginHistory.find({
+        userId,
+        loginStatus: 'success',
+        'approximateCoordinates.lat': { $ne: 0 },
+      })
+        .sort({ loginTimestamp: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+    const pendingCount = alerts.filter((a: any) => a.status === 'pending').length;
+
+    res.status(200).json({
+      success: true,
+      pendingCount,
+      alerts,
+      recentLocationPins: recentLoginsWithCoords.map((l: any) => ({
+        id: l._id,
+        city: l.city,
+        country: l.country,
+        coordinates: l.approximateCoordinates,
+        timestamp: l.loginTimestamp,
+        ipAddress: l.ipAddress,
+        browser: l.browserName,
+      })),
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to retrieve impossible travel telemetry.' });
+  }
+}
+
+export async function resolveImpossibleTravel(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { resolution } = req.body; // 'resolved_user' | 'reported_suspicious'
+
+    const alert = await ImpossibleTravelAlert.findOne({ _id: id, userId: req.userId });
+    if (!alert) {
+      res.status(404).json({ success: false, message: 'Alert not found.' });
+      return;
+    }
+
+    alert.status = resolution === 'reported_suspicious' ? 'reported_suspicious' : 'resolved_user';
+    await alert.save();
+
+    if (resolution === 'reported_suspicious') {
+      // Revoke other sessions immediately to safeguard account
+      await ActiveSession.updateMany(
+        { userId: req.userId, revokedAt: { $exists: false } },
+        { $set: { revokedAt: new Date() } }
+      );
+
+      await logSecurityAudit({
+        userId: req.userId as any,
+        action: 'Impossible Travel Flagged as Suspicious by User - All Sessions Reset',
+        eventType: 'security',
+      });
+    } else {
+      await logSecurityAudit({
+        userId: req.userId as any,
+        action: 'Impossible Travel Marked as Legitimate (VPN/Proxy) by User',
+        eventType: 'security',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message:
+        resolution === 'reported_suspicious'
+          ? 'Alert reported as suspicious. All active sessions have been safely reset for your security.'
+          : 'Activity marked as recognized (VPN/Proxy).',
+      alert,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to resolve travel alert.' });
+  }
+}
+
+/**
+ * FEATURE 3: Real-Time Security Alert Center Enhancements
+ */
+export async function markAllAlertsRead(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    await SecurityAlert.updateMany(
+      { userId: req.userId, readStatus: false },
+      { $set: { readStatus: true } }
+    );
+    res.status(200).json({ success: true, message: 'All security alerts marked as read.' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to mark alerts as read.' });
+  }
+}
+
+export async function deleteAlert(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    await SecurityAlert.deleteOne({ _id: id, userId: req.userId });
+    res.status(200).json({ success: true, message: 'Alert dismissed.' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to delete alert.' });
+  }
+}
+
+export async function getAlertPreferences(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const user = await User.findById(req.userId).lean();
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found.' });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      preferences: {
+        allowEmailAlerts: user.securitySettings?.allowEmailAlerts ?? true,
+        allowSmsAlerts: user.securitySettings?.allowSmsAlerts ?? false,
+        highRiskOtpEnforced: user.securitySettings?.highRiskOtpEnforced ?? true,
+        unfamiliarDeviceOtpEnforced: user.securitySettings?.unfamiliarDeviceOtpEnforced ?? true,
+        trustedDeviceDurationDays: user.securitySettings?.trustedDeviceDurationDays ?? 30,
+        recoveryEmail: user.recoveryEmail || '',
+        recoveryEmailVerified: user.recoveryEmailVerified || false,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to retrieve alert preferences.' });
+  }
+}
+
+export async function updateAlertPreferences(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { allowEmailAlerts, highRiskOtpEnforced, unfamiliarDeviceOtpEnforced, recoveryEmail } = req.body;
+    const user = await User.findById(req.userId);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found.' });
+      return;
+    }
+
+    if (user.securitySettings) {
+      if (typeof allowEmailAlerts === 'boolean') user.securitySettings.allowEmailAlerts = allowEmailAlerts;
+      if (typeof highRiskOtpEnforced === 'boolean') user.securitySettings.highRiskOtpEnforced = highRiskOtpEnforced;
+      if (typeof unfamiliarDeviceOtpEnforced === 'boolean') user.securitySettings.unfamiliarDeviceOtpEnforced = unfamiliarDeviceOtpEnforced;
+    }
+
+    if (typeof recoveryEmail === 'string') {
+      const cleanRecovery = recoveryEmail.trim().toLowerCase();
+      if (cleanRecovery && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanRecovery)) {
+        res.status(400).json({ success: false, message: 'Please enter a valid secondary recovery email.' });
+        return;
+      }
+      user.recoveryEmail = cleanRecovery;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Alert & notification preferences updated successfully.',
+      preferences: user.securitySettings,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to update alert preferences.' });
+  }
+}
+
+/**
+ * FEATURE 5: Account Takeover (ATO) Protection
+ */
+export async function getAccountProtectionData(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const data = await getAccountProtectionOverview(req.userId as any);
+    res.status(200).json({ success: true, ...data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to retrieve account protection status.' });
+  }
+}
+
+export async function executeEmergencyFreezeAction(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { reason } = req.body;
+    await executeEmergencyFreeze(req.userId as any, reason || 'User requested emergency account freeze from dashboard');
+    res.status(200).json({
+      success: true,
+      message: 'Emergency freeze activated. All active sessions and devices revoked. Account locked.',
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to execute emergency freeze.' });
+  }
+}
+
+/**
+ * FEATURE 6: Personal Security Timeline
+ */
+export async function getSecurityTimelineData(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { category, search, limit, skip } = req.query;
+    const data = await getPersonalSecurityTimeline(req.userId as any, {
+      category: category as string,
+      search: search as string,
+      limit: limit ? parseInt(limit as string, 10) : 50,
+      skip: skip ? parseInt(skip as string, 10) : 0,
+    });
+
+    res.status(200).json({ success: true, ...data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to retrieve personal security timeline.' });
+  }
+}
+
+export async function exportSecurityTimelineData(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { format = 'csv' } = req.query;
+    const data = await getPersonalSecurityTimeline(req.userId as any, { limit: 500 });
+
+    if (format === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="securepulse-security-audit-${Date.now()}.json"`);
+      res.status(200).send(JSON.stringify(data.items, null, 2));
+      return;
+    }
+
+    const csv = generateTimelineCsv(data.items);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="securepulse-security-audit-${Date.now()}.csv"`);
+    res.status(200).send(csv);
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to export security timeline.' });
+  }
+}
+
+/**
+ * FEATURE 7: Emergency Recovery Codes
+ */
+export async function getRecoveryCodesStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const stats = await getRecoveryCodeStats(req.userId as any);
+    res.status(200).json({ success: true, stats });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to retrieve recovery codes status.' });
+  }
+}
+
+export async function generateNewRecoveryCodes(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const codes = await generateBackupCodesForUser(req.userId as any);
+    res.status(200).json({
+      success: true,
+      message: '10 single-use emergency backup recovery codes generated. Store them in a safe place!',
+      codes,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to generate backup recovery codes.' });
+  }
+}
+
+export async function verifyRecoveryCode(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { code, identifier, newPassword } = req.body;
+    if (!code) {
+      res.status(400).json({ success: false, message: 'Please provide a recovery code.' });
+      return;
+    }
+
+    let targetUserId = req.userId as any;
+    if (!targetUserId && identifier) {
+      const clean = identifier.trim().toLowerCase();
+      const user = await User.findOne({
+        $or: [{ email: clean }, { username: clean }],
+      });
+      if (user) {
+        targetUserId = user._id;
+      }
+    }
+
+    if (!targetUserId) {
+      res.status(400).json({
+        success: false,
+        message: 'Could not identify account. Please specify your email or username.',
+      });
+      return;
+    }
+
+    if (newPassword && newPassword.length < 8) {
+      res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long.',
+      });
+      return;
+    }
+
+    const result = await verifyAndBurnRecoveryCode(targetUserId, code);
+    if (!result.verified) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+
+    if (newPassword) {
+      const user = await User.findById(targetUserId);
+      if (user) {
+        user.passwordHash = await hashPassword(newPassword);
+        await user.save();
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: result.message || 'Recovery code verified and account successfully restored.',
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: 'Failed to verify recovery code.' });
+  }
+}
+

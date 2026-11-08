@@ -137,12 +137,17 @@ export const sessionApi = {
   terminateAll: () => apiRequest('/sessions/all', { method: 'DELETE' }),
 };
 
-// Security Overview & Alerts API
+// Security Overview, Alerts & Advanced Intelligence API
 export const securityApi = {
   getOverview: () => apiRequest('/security/overview'),
   getAlerts: (unreadOnly = false) => apiRequest(`/security/alerts?unreadOnly=${unreadOnly}`),
   markAlertRead: (id: string) => apiRequest(`/security/alerts/${id}/read`, { method: 'PUT' }),
+  markAllAlertsRead: () => apiRequest('/security/alerts/mark-all-read', { method: 'POST' }),
+  deleteAlert: (id: string) => apiRequest(`/security/alerts/${id}`, { method: 'DELETE' }),
   clearAllAlerts: () => apiRequest('/security/alerts/clear-all', { method: 'POST' }),
+  getAlertPreferences: () => apiRequest('/security/alerts/preferences'),
+  updateAlertPreferences: (body: any) =>
+    apiRequest('/security/alerts/preferences', { method: 'PUT', body: JSON.stringify(body) }),
   getHealthScore: () => apiRequest('/security/health-score'),
   emergencyLock: (confirmationPhrase: string) =>
     apiRequest('/security/emergency-lock', { method: 'POST', body: JSON.stringify({ confirmationPhrase }) }),
@@ -150,5 +155,72 @@ export const securityApi = {
     apiRequest('/security/recover/request', { method: 'POST', body: JSON.stringify({ identifier }) }),
   verifyRecovery: (body: any) =>
     apiRequest('/security/recover/verify', { method: 'POST', body: JSON.stringify(body) }),
+  verifyBackupCode: (code: string, identifier?: string, newPassword?: string) =>
+    apiRequest('/security/recover/backup-code', { method: 'POST', body: JSON.stringify({ code, identifier, newPassword }) }),
+
+  // FEATURE 1: AI Risk Analysis
+  getRiskAnalysis: () => apiRequest('/security/risk-analysis'),
+
+  // FEATURE 2: Impossible Travel
+  getImpossibleTravel: () => apiRequest('/security/impossible-travel'),
+  resolveImpossibleTravel: (id: string, resolution: 'resolved_user' | 'reported_suspicious') =>
+    apiRequest(`/security/impossible-travel/${id}/resolve`, { method: 'PUT', body: JSON.stringify({ resolution }) }),
+
+  // FEATURE 5: Account Takeover (ATO) Protection
+  getAccountProtection: () => apiRequest('/security/account-protection'),
+  emergencyFreeze: (reason?: string) =>
+    apiRequest('/security/account-protection/emergency-freeze', { method: 'POST', body: JSON.stringify({ reason }) }),
+
+  // FEATURE 6: Personal Security Timeline
+  getTimeline: (params: Record<string, any> = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') query.append(k, String(v));
+    });
+    return apiRequest(`/security/timeline?${query.toString()}`);
+  },
+  exportTimelineCsv: async () => {
+    const csvData = await apiRequest<string>('/security/timeline/export?format=csv');
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `securepulse-security-timeline-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
+  exportTimelineJson: async () => {
+    const jsonData = await apiRequest<any>('/security/timeline/export?format=json');
+    const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `securepulse-security-timeline-${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
+
+  // FEATURE 7: Emergency Recovery Codes
+  getRecoveryCodes: () => apiRequest('/security/recovery/codes'),
+  generateRecoveryCodes: () => apiRequest('/security/recovery/codes/generate', { method: 'POST' }),
+};
+
+// FEATURE 4: WebAuthn Passkeys API
+export const passkeyApi = {
+  getAuthOptions: (email?: string) =>
+    apiRequest(`/passkeys/auth-options${email ? `?email=${encodeURIComponent(email)}` : ''}`),
+  verifyAuth: (response: any) =>
+    apiRequest('/passkeys/verify-auth', { method: 'POST', body: JSON.stringify({ response }) }),
+  getRegisterOptions: () => apiRequest('/passkeys/register-options'),
+  register: (response: any, name?: string) =>
+    apiRequest('/passkeys/register', { method: 'POST', body: JSON.stringify({ response, name }) }),
+  list: () => apiRequest('/passkeys/list'),
+  rename: (id: string, name: string) =>
+    apiRequest(`/passkeys/${id}`, { method: 'PUT', body: JSON.stringify({ name }) }),
+  delete: (id: string) => apiRequest(`/passkeys/${id}`, { method: 'DELETE' }),
 };
 

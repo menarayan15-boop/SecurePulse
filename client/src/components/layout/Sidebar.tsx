@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Brain,
   History,
-  Laptop,
-  Radio,
+  Compass,
   BellRing,
-  Sliders,
+  KeyRound,
+  ShieldAlert,
+  Clock,
+  LifeBuoy,
+  Laptop,
   UserCheck,
   AlertOctagon,
   ShieldCheck,
@@ -25,12 +29,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
   const navLinks = [
     { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { to: '/risk-analysis', label: 'AI Risk Analysis', icon: Brain },
     { to: '/activity', label: 'Login Activity', icon: History },
-    { to: '/devices', label: 'Trusted Devices', icon: Laptop },
-    { to: '/sessions', label: 'Active Sessions', icon: Radio },
-    { to: '/alerts', label: 'Security Alerts', icon: BellRing },
-    { to: '/security', label: 'Security Settings', icon: Sliders },
-    { to: '/profile', label: 'My Profile', icon: UserCheck },
+    { to: '/impossible-travel', label: 'Impossible Travel Alerts', icon: Compass },
+    { to: '/alerts', label: 'Security Notifications', icon: BellRing },
+    { to: '/passkeys', label: 'Passkeys & Authentication', icon: KeyRound },
+    { to: '/account-protection', label: 'Account Protection', icon: ShieldAlert },
+    { to: '/timeline', label: 'Security Timeline', icon: Clock },
+    { to: '/emergency-recovery', label: 'Emergency Recovery', icon: LifeBuoy },
+    { to: '/devices', label: 'Device Management', icon: Laptop },
+    { to: '/profile', label: 'Profile & Settings', icon: UserCheck },
   ];
 
   const handleTriggerEmergencyLock = async () => {
@@ -47,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
   return (
     <>
-      <aside className="w-64 h-full bg-white dark:bg-cyber-surface border-r border-gray-200 dark:border-cyber-border flex flex-col justify-between py-6 px-4 transition-colors duration-200">
+      <aside className="w-64 h-full bg-white dark:bg-cyber-surface border-r border-gray-200 dark:border-cyber-border flex flex-col justify-between py-6 px-4 transition-colors duration-200 overflow-y-auto scrollbar-thin">
         <div className="space-y-6">
           {/* Section Label */}
           <div className="px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">

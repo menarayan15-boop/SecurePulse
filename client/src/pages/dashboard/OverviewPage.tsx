@@ -13,6 +13,11 @@ import {
   ExternalLink,
   Sliders,
   UserCheck,
+  Brain,
+  Compass,
+  KeyRound,
+  LifeBuoy,
+  Fingerprint,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -26,15 +31,33 @@ export const OverviewPage: React.FC = () => {
   const { theme, preference, istTime } = useTheme();
 
   const [data, setData] = useState<ISecurityOverview | null>(null);
+  const [riskData, setRiskData] = useState<any>(null);
+  const [travelCount, setTravelCount] = useState<number>(0);
+  const [protectionTier, setProtectionTier] = useState<string>('Fortified');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOverview = async () => {
       try {
-        const res = await securityApi.getOverview();
-        if (res.success) {
-          setData(res);
+        const [overviewRes, riskRes, travelRes, atoRes] = await Promise.allSettled([
+          securityApi.getOverview(),
+          securityApi.getRiskAnalysis(),
+          securityApi.getImpossibleTravel(),
+          securityApi.getAccountProtection(),
+        ]);
+
+        if (overviewRes.status === 'fulfilled' && overviewRes.value.success) {
+          setData(overviewRes.value);
+        }
+        if (riskRes.status === 'fulfilled' && riskRes.value.success) {
+          setRiskData(riskRes.value.analytics);
+        }
+        if (travelRes.status === 'fulfilled' && travelRes.value.success) {
+          setTravelCount(travelRes.value.pendingCount || 0);
+        }
+        if (atoRes.status === 'fulfilled' && atoRes.value.success) {
+          setProtectionTier(atoRes.value.protectionTier || 'Fortified');
         }
       } catch (err: any) {
         setError(err.message || 'Failed to load security overview.');
@@ -195,6 +218,98 @@ export const OverviewPage: React.FC = () => {
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
             <span>30-day trust active</span>
             <span className="text-gray-400 group-hover:text-purple-500 transition-colors">Review →</span>
+          </div>
+        </Link>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2B. ADVANCED INTELLIGENCE & THREAT DEFENSE TELEMETRY                     */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+        {/* Feature 1 Card: AI Login Risk Analysis */}
+        <Link
+          to="/risk-analysis"
+          className="group p-5 rounded-3xl bg-gradient-to-br from-white via-white to-emerald-50/30 dark:from-cyber-surface dark:via-cyber-surface dark:to-emerald-950/20 border border-gray-200 dark:border-cyber-border hover:border-emerald-500/50 shadow-sm transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                AI Login Risk Analysis
+              </span>
+              <Brain className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-3xl font-black text-gray-900 dark:text-gray-100">
+                {riskData?.currentSessionScore ?? 10}
+              </span>
+              <span className="text-xs text-gray-400">/ 100</span>
+              <span className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                {riskData?.overallRiskLevel ? riskData.overallRiskLevel.toUpperCase() : 'LOW'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+              Multi-signal behavioral risk score. Evaluates travel velocity, browser, and network signatures.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-cyber-border flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+            <span>Explore Risk Factors Breakdown</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </Link>
+
+        {/* Feature 2 Card: Impossible Travel Alerts */}
+        <Link
+          to="/impossible-travel"
+          className="group p-5 rounded-3xl bg-gradient-to-br from-white via-white to-rose-50/20 dark:from-cyber-surface dark:via-cyber-surface dark:to-rose-950/20 border border-gray-200 dark:border-cyber-border hover:border-rose-500/50 shadow-sm transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                Impossible Travel Alerts
+              </span>
+              <Compass className="w-5 h-5 text-rose-500" />
+            </div>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-3xl font-black text-gray-900 dark:text-gray-100">
+                {travelCount}
+              </span>
+              <span className="text-xs text-gray-400">pending alerts</span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+              Location-based velocity monitor detects authentication requests exceeding physical airline travel limits.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-cyber-border flex items-center justify-between text-xs font-semibold text-rose-600 dark:text-rose-400 group-hover:translate-x-0.5 transition-transform">
+            <span>View Flight Vectors & Map</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </Link>
+
+        {/* Feature 5 Card: Account Takeover Protection */}
+        <Link
+          to="/account-protection"
+          className="group p-5 rounded-3xl bg-gradient-to-br from-white via-white to-blue-50/20 dark:from-cyber-surface dark:via-cyber-surface dark:to-blue-950/20 border border-gray-200 dark:border-cyber-border hover:border-blue-500/50 shadow-sm transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                Account Protection
+              </span>
+              <ShieldAlert className="w-5 h-5 text-blue-500" />
+            </div>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-3xl font-black text-gray-900 dark:text-gray-100">
+                {protectionTier}
+              </span>
+              <span className="text-xs text-gray-400">Tier Guard</span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+              Monitors sensitive modifications, passkey status, and provides one-click emergency session revoking.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-cyber-border flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+            <span>Open Protection Center</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
       </div>

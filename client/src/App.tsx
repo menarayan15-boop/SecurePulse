@@ -16,10 +16,16 @@ import { AccountRecoveryPage } from './pages/auth/AccountRecoveryPage';
 
 // Authenticated Dashboard Pages
 import { OverviewPage } from './pages/dashboard/OverviewPage';
+import { AiRiskAnalysisPage } from './pages/dashboard/AiRiskAnalysisPage';
 import { LoginActivityPage } from './pages/dashboard/LoginActivityPage';
+import { ImpossibleTravelPage } from './pages/dashboard/ImpossibleTravelPage';
+import { SecurityAlertsPage } from './pages/dashboard/SecurityAlertsPage';
+import { PasskeysPage } from './pages/dashboard/PasskeysPage';
+import { AccountProtectionPage } from './pages/dashboard/AccountProtectionPage';
+import { SecurityTimelinePage } from './pages/dashboard/SecurityTimelinePage';
+import { EmergencyRecoveryPage } from './pages/dashboard/EmergencyRecoveryPage';
 import { TrustedDevicesPage } from './pages/dashboard/TrustedDevicesPage';
 import { ActiveSessionsPage } from './pages/dashboard/ActiveSessionsPage';
-import { SecurityAlertsPage } from './pages/dashboard/SecurityAlertsPage';
 import { SecuritySettingsPage } from './pages/dashboard/SecuritySettingsPage';
 import { ProfilePage } from './pages/dashboard/ProfilePage';
 
@@ -42,10 +48,16 @@ export function App() {
             {/* 3. Protected Member Dashboard Routes (Guarded by DashboardLayout) */}
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<OverviewPage />} />
+              <Route path="/risk-analysis" element={<AiRiskAnalysisPage />} />
               <Route path="/activity" element={<LoginActivityPage />} />
+              <Route path="/impossible-travel" element={<ImpossibleTravelPage />} />
+              <Route path="/alerts" element={<SecurityAlertsPage />} />
+              <Route path="/passkeys" element={<PasskeysPage />} />
+              <Route path="/account-protection" element={<AccountProtectionPage />} />
+              <Route path="/timeline" element={<SecurityTimelinePage />} />
+              <Route path="/emergency-recovery" element={<EmergencyRecoveryPage />} />
               <Route path="/devices" element={<TrustedDevicesPage />} />
               <Route path="/sessions" element={<ActiveSessionsPage />} />
-              <Route path="/alerts" element={<SecurityAlertsPage />} />
               <Route path="/security" element={<SecuritySettingsPage />} />
               <Route path="/settings" element={<Navigate to="/security" replace />} />
               <Route path="/profile" element={<ProfilePage />} />
