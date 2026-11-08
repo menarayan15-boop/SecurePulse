@@ -106,8 +106,8 @@ export const RegisterPage: React.FC = () => {
     try {
       const res = await authApi.register({
         fullName: fullName.trim(),
-        username: username.trim(),
-        email: email.trim(),
+        username: username.trim().toLowerCase(),
+        email: email.trim().toLowerCase(),
         mobileNumber: mobileNumber.trim(),
         password,
       });
