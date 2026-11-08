@@ -9,7 +9,104 @@ export function createModelProxy<T extends Record<string, any>>(
 
   return new Proxy(mongooseModel, {
     get(target, prop, receiver) {
-      // If mongoose is connected to a live database, use mongoose
+      // READ: findOne
+      if (prop === 'findOne') {
+        return function (filter: any) {
+          if (mongoose.connection.readyState === 1) {
+            const query: any = target.findOne(filter);
+            const originalExec = query.exec ? query.exec.bind(query) : null;
+            query.exec = async function () {
+              if (originalExec) {
+                try {
+                  const res = await originalExec();
+                  if (res) return res;
+                } catch {}
+              }
+              return fallbackCollection.findOne(filter);
+            };
+            query.then = function (onfulfilled?: any, onrejected?: any) {
+              return query.exec().then(onfulfilled, onrejected);
+            };
+            return query;
+          }
+          return fallbackCollection.findOne(filter);
+        };
+      }
+
+      // READ: findById
+      if (prop === 'findById') {
+        return function (id: any) {
+          if (mongoose.connection.readyState === 1) {
+            const query: any = target.findById(id);
+            const originalExec = query.exec ? query.exec.bind(query) : null;
+            query.exec = async function () {
+              if (originalExec) {
+                try {
+                  const res = await originalExec();
+                  if (res) return res;
+                } catch {}
+              }
+              return fallbackCollection.findById(id);
+            };
+            query.then = function (onfulfilled?: any, onrejected?: any) {
+              return query.exec().then(onfulfilled, onrejected);
+            };
+            return query;
+          }
+          return fallbackCollection.findById(id);
+        };
+      }
+
+      // WRITE: create
+      if (prop === 'create') {
+        return async function (data: any) {
+          // Always mirror into fallbackCollection to keep persistence synchronized
+          let fallbackDoc: any = null;
+          try {
+            fallbackDoc = await fallbackCollection.create(data);
+          } catch {}
+
+          if (mongoose.connection.readyState === 1) {
+            try {
+              return await target.create(data);
+            } catch (mongoErr) {
+              if (fallbackDoc) return fallbackDoc;
+              throw mongoErr;
+            }
+          }
+          return fallbackDoc;
+        };
+      }
+
+      // WRITE: updateOne
+      if (prop === 'updateOne') {
+        return async function (filter: any, update: any, options?: any) {
+          try {
+            await fallbackCollection.updateOne(filter, update);
+          } catch {}
+
+          if (mongoose.connection.readyState === 1) {
+            return target.updateOne(filter, update, options);
+          }
+          return { modifiedCount: 1 };
+        };
+      }
+
+      // WRITE: updateMany
+      if (prop === 'updateMany') {
+        return async function (filter: any, update: any, options?: any) {
+          try {
+            await fallbackCollection.updateMany(filter, update);
+          } catch {}
+
+          if (mongoose.connection.readyState === 1) {
+            return target.updateMany(filter, update, options);
+          }
+          return { modifiedCount: 1 };
+        };
+      }
+
+      // If mongoose is connected to a live database, delegate other calls to mongoose
       if (mongoose.connection.readyState === 1) {
         return Reflect.get(target, prop, receiver);
       }
@@ -27,4 +124,3 @@ export function createModelProxy<T extends Record<string, any>>(
     },
   });
 }
-

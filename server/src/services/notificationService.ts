@@ -721,13 +721,35 @@ export async function sendOtpEmail(
 
   try {
     const transporter = await getSmtpTransporter(reqId);
-    const info = await transporter.sendMail({
-      from: sender,
-      to,
-      subject,
-      html,
-      text: `Your SecurePulse verification code is: ${otp}. Valid for 5 minutes.`,
-    });
+    let info: any;
+    try {
+      info = await transporter.sendMail({
+        from: sender,
+        to,
+        subject,
+        html,
+        text: `Your SecurePulse verification code is: ${otp}. Valid for 5 minutes.`,
+      });
+    } catch (socketErr: any) {
+      if (
+        socketErr.code === 'ESOCKET' ||
+        socketErr.code === 'ECONNRESET' ||
+        socketErr.message?.includes('ECONNRESET')
+      ) {
+        console.warn(`[AUTH_PIPELINE] [SMTP_RETRY] Retrying SMTP dispatch after transient socket reset...`);
+        cachedTransporter = null;
+        const retryTransporter = await getSmtpTransporter(reqId);
+        info = await retryTransporter.sendMail({
+          from: sender,
+          to,
+          subject,
+          html,
+          text: `Your SecurePulse verification code is: ${otp}. Valid for 5 minutes.`,
+        });
+      } else {
+        throw socketErr;
+      }
+    }
 
     console.log(`[AUTH_PIPELINE] [SMTP_SEND_COMPLETED] [CorrelationId: ${reqId}] SMTP send operation completed.`);
 

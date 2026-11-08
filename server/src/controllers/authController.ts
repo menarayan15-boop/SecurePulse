@@ -121,7 +121,9 @@ export async function register(req: Request, res: Response): Promise<void> {
     const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
     const usernameRegex = new RegExp(`^${cleanUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    const existingUserByEmail = await User.findOne({ email: emailRegex });
+    const existingUserByEmail = await User.findOne({
+      $or: [{ email: cleanEmail }, { email: emailRegex }],
+    });
     let targetUser: any = null;
     let isNewUser = true;
 
@@ -149,7 +151,9 @@ export async function register(req: Request, res: Response): Promise<void> {
         )}'`
       );
 
-      const userWithUsername = await User.findOne({ username: usernameRegex });
+      const userWithUsername = await User.findOne({
+        $or: [{ username: cleanUsername }, { username: usernameRegex }],
+      });
       if (
         userWithUsername &&
         String(userWithUsername._id) !== String(existingUserByEmail._id) &&
@@ -168,6 +172,17 @@ export async function register(req: Request, res: Response): Promise<void> {
       existingUserByEmail.mobileNumber = cleanMobile;
       existingUserByEmail.passwordHash = passwordHash;
       await existingUserByEmail.save();
+      await User.updateOne(
+        { _id: existingUserByEmail._id },
+        {
+          $set: {
+            fullName: cleanFullName,
+            username: cleanUsername,
+            mobileNumber: cleanMobile,
+            passwordHash,
+          },
+        }
+      );
 
       targetUser = existingUserByEmail;
       isNewUser = false;
@@ -179,7 +194,9 @@ export async function register(req: Request, res: Response): Promise<void> {
       );
     } else {
       // Check if username is taken by any verified user
-      const existingUserByUsername = await User.findOne({ username: usernameRegex });
+      const existingUserByUsername = await User.findOne({
+        $or: [{ username: cleanUsername }, { username: usernameRegex }],
+      });
       if (existingUserByUsername) {
         console.warn(
           `[AUTH_PIPELINE] [USERNAME_TAKEN] [CorrelationId: ${correlationId}] Username '${cleanUsername}' collision detected`
@@ -463,8 +480,11 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
       user = await User.findById(userId);
     }
     if (!user && email) {
-      const emailRegex = new RegExp(`^${String(email).trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
-      user = await User.findOne({ email: emailRegex });
+      const cleanEmail = String(email).trim().toLowerCase();
+      const emailRegex = new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      user = await User.findOne({
+        $or: [{ email: cleanEmail }, { email: emailRegex }],
+      });
     }
 
     if (!user) {
@@ -491,7 +511,7 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    if (new Date() > verification.expiresAt) {
+    if (new Date().getTime() > new Date(verification.expiresAt).getTime()) {
       res.status(400).json({
         success: false,
         message: 'Your verification code has expired.',
@@ -529,6 +549,7 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
 
     user.emailVerified = true;
     await user.save();
+    await User.updateOne({ _id: user._id }, { $set: { emailVerified: true } });
 
     // Auto-login upon verification: Establish session
     const envInfo = extractEnvironmentInfo(req);
@@ -624,6 +645,10 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
+  const correlationId =
+    (req.headers['x-correlation-id'] as string) ||
+    'sp_login_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+
   try {
     const { identifier, password, rememberDevice } = req.body;
     const envInfo = extractEnvironmentInfo(req);
@@ -633,21 +658,33 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const cleanIdentifier = identifier.trim().toLowerCase();
+    const cleanIdentifier = String(identifier).trim().toLowerCase();
+    const rawPassword = String(password);
     const identifierRegex = new RegExp(`^${cleanIdentifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     const user = await User.findOne({
-      $or: [{ email: identifierRegex }, { username: identifierRegex }],
+      $or: [
+        { email: cleanIdentifier },
+        { username: cleanIdentifier },
+        { email: identifierRegex },
+        { username: identifierRegex },
+      ],
     });
 
     // If user does not exist
     if (!user) {
+      console.warn(
+        `[AUTH_PIPELINE] [LOGIN_USER_NOT_FOUND] [CorrelationId: ${correlationId}] No active or pending account matched identifier '${cleanIdentifier}'`
+      );
       res.status(401).json({ success: false, message: 'Invalid email or password.' });
       return;
     }
 
     // Check account status
     if (user.accountStatus === 'locked') {
+      console.warn(
+        `[AUTH_PIPELINE] [LOGIN_LOCKED_ACCOUNT] [CorrelationId: ${correlationId}] Account is locked for user '${user.username}'`
+      );
       res.status(403).json({
         success: false,
         message: 'This account has been locked for emergency security. Please complete the account recovery process.',
@@ -657,10 +694,21 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    if (!user.passwordHash) {
+      console.error(
+        `[AUTH_PIPELINE] [LOGIN_CORRUPT_RECORD] [CorrelationId: ${correlationId}] User '${user.username}' is missing passwordHash`
+      );
+      res.status(401).json({ success: false, message: 'Invalid email or password.' });
+      return;
+    }
+
     // Verify Password
-    const isPasswordValid = await comparePassword(password, user.passwordHash);
+    const isPasswordValid = await comparePassword(rawPassword, user.passwordHash);
 
     if (!isPasswordValid) {
+      console.warn(
+        `[AUTH_PIPELINE] [LOGIN_PASSWORD_MISMATCH] [CorrelationId: ${correlationId}] Password comparison failed for user '${user.username}'`
+      );
       // Log failed attempt
       await LoginHistory.create({
         userId: user._id,
@@ -976,7 +1024,7 @@ export async function verifyLoginOtp(req: Request, res: Response): Promise<void>
       return;
     }
 
-    if (new Date() > verification.expiresAt) {
+    if (new Date().getTime() > new Date(verification.expiresAt).getTime()) {
       res.status(400).json({
         success: false,
         message: 'Your verification code has expired.',
@@ -1035,6 +1083,7 @@ export async function verifyLoginOtp(req: Request, res: Response): Promise<void>
     if (!user.emailVerified) {
       user.emailVerified = true;
       await user.save();
+      await User.updateOne({ _id: user._id }, { $set: { emailVerified: true } });
     }
 
     // Trust this device if user opted in

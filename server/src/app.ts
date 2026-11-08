@@ -70,7 +70,7 @@ app.use(cookieParser());
 
 // Serverless DB Auto-Connect (ensures warm connection on Vercel Function invocations)
 app.use(async (req: Request, res: Response, next: NextFunction) => {
-  if (mongoose.connection.readyState === 0) {
+  if (mongoose.connection.readyState === 0 || mongoose.connection.readyState === 2) {
     try {
       await connectDB();
     } catch (err: any) {
