@@ -2,20 +2,23 @@
 // Ensures that users, sessions, and verification records persist across ephemeral Lambda instances.
 
 const NEON_HOST = process.env.NEON_HOST || 'ep-autumn-band-b5rk8osr.c-7.us-east-2.aws.neon.tech';
-const NEON_TOKEN = process.env.NEON_TOKEN || 'npg_RL1x0eYVSsrc';
+const NEON_CONN =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  'postgresql://neondb_owner:npg_RL1x0eYVSsrc@ep-autumn-band-b5rk8osr.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require';
 
 export async function fetchRemoteCollection(collectionName: string): Promise<any[]> {
-  if (!NEON_HOST || !NEON_TOKEN) return [];
+  if (!NEON_HOST || !NEON_CONN) return [];
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000);
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
 
   try {
     const res = await fetch(`https://${NEON_HOST}/sql`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${NEON_TOKEN}`,
+        'Neon-Connection-String': NEON_CONN,
       },
       body: JSON.stringify({
         query: `SELECT data FROM securepulse_documents WHERE collection_name = '${collectionName.replace(/'/g, "''")}';`,
@@ -37,10 +40,10 @@ export async function fetchRemoteCollection(collectionName: string): Promise<any
 }
 
 export async function upsertRemoteDoc(collectionName: string, docId: string, data: any): Promise<void> {
-  if (!NEON_HOST || !NEON_TOKEN || !docId) return;
+  if (!NEON_HOST || !NEON_CONN || !docId) return;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3500);
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
 
   try {
     // Sanitize data string for SQL insertion
@@ -61,7 +64,7 @@ export async function upsertRemoteDoc(collectionName: string, docId: string, dat
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${NEON_TOKEN}`,
+        'Neon-Connection-String': NEON_CONN,
       },
       body: JSON.stringify({ query }),
       signal: controller.signal,
@@ -74,7 +77,7 @@ export async function upsertRemoteDoc(collectionName: string, docId: string, dat
 }
 
 export async function deleteRemoteDoc(collectionName: string, docId: string): Promise<void> {
-  if (!NEON_HOST || !NEON_TOKEN || !docId) return;
+  if (!NEON_HOST || !NEON_CONN || !docId) return;
 
   try {
     const query = `DELETE FROM securepulse_documents WHERE collection_name = '${collectionName.replace(/'/g, "''")}' AND doc_id = '${String(docId).replace(/'/g, "''")}';`;
@@ -82,7 +85,7 @@ export async function deleteRemoteDoc(collectionName: string, docId: string): Pr
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${NEON_TOKEN}`,
+        'Neon-Connection-String': NEON_CONN,
       },
       body: JSON.stringify({ query }),
     }).catch(() => {});
