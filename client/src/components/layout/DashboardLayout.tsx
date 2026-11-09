@@ -79,8 +79,8 @@ export const DashboardLayout: React.FC = () => {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+          <div className="max-w-7xl mx-auto w-full min-w-0">
             <Outlet />
           </div>
         </main>
