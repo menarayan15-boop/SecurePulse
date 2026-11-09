@@ -14,6 +14,12 @@ import {
   UserCheck,
   AlertOctagon,
   ShieldCheck,
+  Sparkles,
+  Plane,
+  Lock,
+  GraduationCap,
+  HelpCircle,
+  Key,
 } from 'lucide-react';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { securityApi } from '../../api/client';
@@ -29,6 +35,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
   const navLinks = [
     { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { to: '/assistant', label: 'AI Security Assistant', icon: Sparkles },
+    { to: '/phishing', label: 'Phishing Detector', icon: ShieldAlert },
+    { to: '/password-health', label: 'Password Health', icon: Key },
+    { to: '/confirmations', label: 'Was This You?', icon: HelpCircle },
+    { to: '/travel', label: 'Smart Travel Mode', icon: Plane },
+    { to: '/learning', label: 'Learning Center', icon: GraduationCap },
+    { to: '/privacy', label: 'Privacy Control', icon: Lock },
     { to: '/risk-analysis', label: 'AI Risk Analysis', icon: Brain },
     { to: '/activity', label: 'Login Activity', icon: History },
     { to: '/impossible-travel', label: 'Impossible Travel Alerts', icon: Compass },

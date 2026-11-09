@@ -28,6 +28,13 @@ import { TrustedDevicesPage } from './pages/dashboard/TrustedDevicesPage';
 import { ActiveSessionsPage } from './pages/dashboard/ActiveSessionsPage';
 import { SecuritySettingsPage } from './pages/dashboard/SecuritySettingsPage';
 import { ProfilePage } from './pages/dashboard/ProfilePage';
+import { SecurityAssistantPage } from './pages/dashboard/SecurityAssistantPage';
+import { PhishingDetectorPage } from './pages/dashboard/PhishingDetectorPage';
+import { PasswordHealthPage } from './pages/dashboard/PasswordHealthPage';
+import { SecurityConfirmationPage } from './pages/dashboard/SecurityConfirmationPage';
+import { SmartTravelPage } from './pages/dashboard/SmartTravelPage';
+import { LearningCenterPage } from './pages/dashboard/LearningCenterPage';
+import { PrivacyControlPage } from './pages/dashboard/PrivacyControlPage';
 
 export function App() {
   return (
@@ -48,6 +55,13 @@ export function App() {
             {/* 3. Protected Member Dashboard Routes (Guarded by DashboardLayout) */}
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<OverviewPage />} />
+              <Route path="/assistant" element={<SecurityAssistantPage />} />
+              <Route path="/phishing" element={<PhishingDetectorPage />} />
+              <Route path="/password-health" element={<PasswordHealthPage />} />
+              <Route path="/confirmations" element={<SecurityConfirmationPage />} />
+              <Route path="/travel" element={<SmartTravelPage />} />
+              <Route path="/learning" element={<LearningCenterPage />} />
+              <Route path="/privacy" element={<PrivacyControlPage />} />
               <Route path="/risk-analysis" element={<AiRiskAnalysisPage />} />
               <Route path="/activity" element={<LoginActivityPage />} />
               <Route path="/impossible-travel" element={<ImpossibleTravelPage />} />

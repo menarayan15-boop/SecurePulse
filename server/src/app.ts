@@ -15,6 +15,13 @@ import deviceRoutes from './routes/deviceRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import securityRoutes from './routes/securityRoutes.js';
 import passkeyRoutes from './routes/passkeyRoutes.js';
+import securityAssistantRoutes from './routes/securityAssistantRoutes.js';
+import phishingRoutes from './routes/phishingRoutes.js';
+import passwordHealthRoutes from './routes/passwordHealthRoutes.js';
+import privacyRoutes from './routes/privacyRoutes.js';
+import securityConfirmationRoutes from './routes/securityConfirmationRoutes.js';
+import learningRoutes from './routes/learningRoutes.js';
+import travelRoutes from './routes/travelRoutes.js';
 import { calculateThemeForIST } from './utils/themeEngine.js';
 import { extractEnvironmentInfo } from './services/environmentDetection.js';
 import { verifyEmailServiceStatus } from './services/notificationService.js';
@@ -122,6 +129,13 @@ app.use(['/api/devices', '/devices'], deviceRoutes);
 app.use(['/api/sessions', '/sessions'], sessionRoutes);
 app.use(['/api/security', '/security'], securityRoutes);
 app.use(['/api/passkeys', '/passkeys'], passkeyRoutes);
+app.use(['/api/security-assistant', '/security-assistant'], securityAssistantRoutes);
+app.use(['/api/phishing', '/phishing'], phishingRoutes);
+app.use(['/api/password-health', '/password-health'], passwordHealthRoutes);
+app.use(['/api/privacy', '/privacy'], privacyRoutes);
+app.use(['/api/security-confirmations', '/security-confirmations'], securityConfirmationRoutes);
+app.use(['/api/learning', '/learning'], learningRoutes);
+app.use(['/api/travel', '/travel'], travelRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
