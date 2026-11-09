@@ -35,7 +35,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const COOKIE_BASE_OPTIONS = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+  sameSite: 'lax' as const,
   path: '/',
 };
 
@@ -699,7 +699,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       console.warn(
         `[AUTH_PIPELINE] [USER_LOOKUP_FAILED] [CorrelationId: ${correlationId}] FailureCategory='USER_NOT_FOUND' No active or pending account matched identifier '${maskEmail(cleanIdentifier)}'`
       );
-      res.status(401).json({ success: false, message: 'Invalid email or password.', category: 'INVALID_CREDENTIALS', correlationId });
+      res.status(401).json({ success: false, message: 'Invalid email or password.', category: 'USER_NOT_FOUND', correlationId });
       return;
     }
 
@@ -793,7 +793,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         );
       }
 
-      res.status(401).json({ success: false, message: 'Invalid email or password.', category: 'INVALID_CREDENTIALS', correlationId });
+      res.status(401).json({ success: false, message: 'Invalid email or password.', category: 'PASSWORD_MISMATCH', correlationId });
       return;
     }
 
@@ -835,6 +835,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         userId: user._id,
         email: maskedEmail,
         maskedEmail,
+        category: 'EMAIL_VERIFICATION_REQUIRED',
         message: 'Verification code sent to your registered email.',
         resendCooldownSeconds: 60,
       });

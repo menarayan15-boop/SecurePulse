@@ -165,7 +165,7 @@ export const RegisterPage: React.FC = () => {
     try {
       const res = await authApi.verifyEmail(createdUserId, verificationOtp, email.trim().toLowerCase());
       if (res.success && res.user) {
-        loginSuccess(res.user);
+        loginSuccess(res.user, res.accessToken);
         navigate('/dashboard');
       }
     } catch (err: any) {

@@ -161,7 +161,7 @@ export const LoginPage: React.FC = () => {
         startResendTimer();
       } else if (res.success && res.user) {
         // Direct login success
-        loginSuccess(res.user);
+        loginSuccess(res.user, res.accessToken);
         navigate(targetDestination);
       }
     } catch (err: any) {
@@ -195,7 +195,7 @@ export const LoginPage: React.FC = () => {
     try {
       const res = await authApi.verifyLoginOtp(challengeToken, otp, trustThisDevice);
       if (res.success && res.user) {
-        loginSuccess(res.user);
+        loginSuccess(res.user, res.accessToken);
         navigate(targetDestination);
       }
     } catch (err: any) {

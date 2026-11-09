@@ -1,9 +1,28 @@
 /**
  * SecurePulse API Client
- * Wraps native fetch with credentials: 'include', CSRF/Cookie support, and auto-refresh
+ * Wraps native fetch with credentials: 'include', CSRF/Cookie support, in-memory token fallback, and auto-refresh
  */
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL?.replace(/\/$/, '') || '/api';
+
+// In-memory access token storage (persists only in JS runtime memory, never in localStorage)
+let inMemoryAccessToken: string | null = null;
+let hasFailedRefresh = false;
+
+export function setAccessToken(token: string | null): void {
+  inMemoryAccessToken = token;
+  if (token) {
+    hasFailedRefresh = false;
+  }
+}
+
+export function getAccessToken(): string | null {
+  return inMemoryAccessToken;
+}
+
+export function resetRefreshFailure(): void {
+  hasFailedRefresh = false;
+}
 
 interface RequestOptions extends RequestInit {
   retryOn401?: boolean;
@@ -12,18 +31,25 @@ interface RequestOptions extends RequestInit {
 export async function apiRequest<T = any>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { retryOn401 = true, headers = {}, ...rest } = options;
 
+  const requestHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(headers as Record<string, string>),
+  };
+
+  // Attach in-memory access token as Authorization Bearer header if available
+  if (inMemoryAccessToken && !requestHeaders['Authorization']) {
+    requestHeaders['Authorization'] = `Bearer ${inMemoryAccessToken}`;
+  }
+
   const config: RequestInit = {
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
+    headers: requestHeaders,
     ...rest,
   };
 
   const response = await fetch(`${API_BASE}${endpoint}`, config);
 
-  if (response.status === 401 && retryOn401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
+  if (response.status === 401 && retryOn401 && !hasFailedRefresh && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
     // Attempt silent token refresh
     try {
       const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
@@ -33,11 +59,18 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestOpti
       });
 
       if (refreshRes.ok) {
-        // Retry original request once
+        const refreshData = await refreshRes.json();
+        if (refreshData.accessToken) {
+          setAccessToken(refreshData.accessToken);
+        }
+        hasFailedRefresh = false;
+        // Retry original request once with fresh token
         return apiRequest<T>(endpoint, { ...options, retryOn401: false });
+      } else {
+        hasFailedRefresh = true;
       }
     } catch {
-      // Refresh failed, proceed with error
+      hasFailedRefresh = true;
     }
   }
 
@@ -79,6 +112,7 @@ export const authApi = {
     }),
   resendOtp: (payload: { challengeToken?: string; userId?: string; email?: string; purpose?: string }) =>
     apiRequest('/auth/resend-otp', { method: 'POST', body: JSON.stringify(payload) }),
+  refresh: () => apiRequest('/auth/refresh', { method: 'POST' }),
   logout: () => apiRequest('/auth/logout', { method: 'POST' }),
   forgotPassword: (identifier: string) =>
     apiRequest('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ identifier }) }),
