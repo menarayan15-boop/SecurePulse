@@ -69,8 +69,8 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestOpti
 // Authentication API
 export const authApi = {
   register: (body: any) => apiRequest('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  verifyEmail: (userId: string, otp: string) =>
-    apiRequest('/auth/verify-email', { method: 'POST', body: JSON.stringify({ userId, otp }) }),
+  verifyEmail: (userId: string, otp: string, email?: string) =>
+    apiRequest('/auth/verify-email', { method: 'POST', body: JSON.stringify({ userId, otp, email }) }),
   login: (body: any) => apiRequest('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   verifyLoginOtp: (challengeToken: string, otp: string, trustThisDevice: boolean) =>
     apiRequest('/auth/verify-login-otp', {

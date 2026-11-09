@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { SEED_DATA_MAP } from './seedData.js';
+import { upsertRemoteDoc, fetchRemoteCollection, deleteRemoteDoc } from './cloudSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -278,6 +279,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         delete this.items[idx].id;
         delete this.items[idx].updateOne;
         this.saveToFile();
+        upsertRemoteDoc(this.collectionName, doc._id, this.items[idx]).catch(() => {});
       } else {
         const copy = { ...doc };
         delete copy.save;
@@ -286,6 +288,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         delete copy.updateOne;
         this.items.push(copy);
         this.saveToFile();
+        upsertRemoteDoc(this.collectionName, doc._id, copy).catch(() => {});
       }
       return doc;
     };
@@ -321,6 +324,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
     };
     this.items.push(item);
     this.saveToFile();
+    upsertRemoteDoc(this.collectionName, item._id, item).catch(() => {});
     return this.wrapDoc(item);
   }
 
@@ -336,6 +340,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
       };
       this.items.push(item);
       created.push(this.wrapDoc(item));
+      upsertRemoteDoc(this.collectionName, item._id, item).catch(() => {});
     }
     this.saveToFile();
     return created;
@@ -439,15 +444,38 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         return queryObj;
       },
 
+      exec() {
+        return new Promise((resolve, reject) => queryObj.then(resolve, reject));
+      },
+
       then: (resolve: (val: any) => void, reject?: (err: any) => void) => {
         try {
           this.load();
-          const raw = this.items.find((item) => this.matchFilter(item, filter));
-          if (!raw) {
-            resolve(null);
+          let raw = this.items.find((item) => this.matchFilter(item, filter));
+          if (!raw && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+            fetchRemoteCollection(this.collectionName).then((remoteItems) => {
+              if (Array.isArray(remoteItems) && remoteItems.length > 0) {
+                let merged = false;
+                for (const r of remoteItems) {
+                  if (r && r._id && !this.items.some((i: any) => String(i._id) === String(r._id))) {
+                    this.items.push(r);
+                    merged = true;
+                  }
+                }
+                if (merged) {
+                  this.saveToFile();
+                  raw = this.items.find((item) => this.matchFilter(item, filter));
+                }
+              }
+              const wrapped = raw ? (queryObj._lean ? raw : this.wrapDoc(raw)) : null;
+              resolve(wrapped);
+            }).catch(() => {
+              const wrapped = raw ? (queryObj._lean ? raw : this.wrapDoc(raw)) : null;
+              resolve(wrapped);
+            });
             return;
           }
-          const wrapped = queryObj._lean ? raw : this.wrapDoc(raw);
+          const wrapped = raw ? (queryObj._lean ? raw : this.wrapDoc(raw)) : null;
           resolve(wrapped);
         } catch (err) {
           if (reject) reject(err);
@@ -485,6 +513,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
     }
     (item as any).updatedAt = new Date();
     this.saveToFile();
+    upsertRemoteDoc(this.collectionName, item._id, item).catch(() => {});
     return { modifiedCount: 1 };
   }
 

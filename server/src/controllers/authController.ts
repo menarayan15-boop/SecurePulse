@@ -467,6 +467,10 @@ export async function getAuthDiagnostics(req: Request, res: Response): Promise<v
 }
 
 export async function verifyEmail(req: Request, res: Response): Promise<void> {
+  const correlationId =
+    (req.headers['x-correlation-id'] as string) ||
+    'sp_verify_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+
   try {
     const { userId, email, otp } = req.body;
 
@@ -573,6 +577,10 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
       expiresAt,
     });
 
+    console.log(
+      `[AUTH_PIPELINE] [SESSION_CREATION_RESULT] [CorrelationId: ${correlationId}] Session token established for '${user.username}'`
+    );
+
     const accessToken = signAccessToken({ userId: user._id.toString(), username: user.username });
 
     // Record login history
@@ -654,7 +662,8 @@ export async function login(req: Request, res: Response): Promise<void> {
     const envInfo = extractEnvironmentInfo(req);
 
     if (!identifier || !password) {
-      res.status(400).json({ success: false, message: 'Email/username and password are required.' });
+      console.warn(`[AUTH_PIPELINE] [LOGIN_VALIDATION_FAILED] [CorrelationId: ${correlationId}] Missing identifier or password`);
+      res.status(400).json({ success: false, message: 'Email/username and password are required.', category: 'VALIDATION_ERROR', correlationId });
       return;
     }
 
@@ -662,52 +671,78 @@ export async function login(req: Request, res: Response): Promise<void> {
     const rawPassword = String(password);
     const identifierRegex = new RegExp(`^${cleanIdentifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
-    const user = await User.findOne({
-      $or: [
-        { email: cleanIdentifier },
-        { username: cleanIdentifier },
-        { email: identifierRegex },
-        { username: identifierRegex },
-      ],
-    });
+    console.log(`[AUTH_PIPELINE] [LOGIN_REQUEST_RECEIVED] [CorrelationId: ${correlationId}] Identifier='${maskEmail(cleanIdentifier)}' IP='${envInfo.ipAddress}'`);
+
+    let user: any = null;
+    try {
+      user = await User.findOne({
+        $or: [
+          { email: cleanIdentifier },
+          { username: cleanIdentifier },
+          { email: identifierRegex },
+          { username: identifierRegex },
+        ],
+      });
+    } catch (dbErr: any) {
+      console.error(`[AUTH_PIPELINE] [DATABASE_FAILURE] [CorrelationId: ${correlationId}] Database error during user lookup:`, dbErr.message);
+      res.status(503).json({
+        success: false,
+        message: 'Database service is temporarily unavailable. Please try again in a few moments.',
+        category: 'DATABASE_ERROR',
+        correlationId,
+      });
+      return;
+    }
 
     // If user does not exist
     if (!user) {
       console.warn(
-        `[AUTH_PIPELINE] [LOGIN_USER_NOT_FOUND] [CorrelationId: ${correlationId}] No active or pending account matched identifier '${cleanIdentifier}'`
+        `[AUTH_PIPELINE] [USER_LOOKUP_FAILED] [CorrelationId: ${correlationId}] FailureCategory='USER_NOT_FOUND' No active or pending account matched identifier '${maskEmail(cleanIdentifier)}'`
       );
-      res.status(401).json({ success: false, message: 'Invalid email or password.' });
+      res.status(401).json({ success: false, message: 'Invalid email or password.', category: 'INVALID_CREDENTIALS', correlationId });
       return;
     }
+
+    console.log(
+      `[AUTH_PIPELINE] [USER_LOOKUP_SUCCEEDED] [CorrelationId: ${correlationId}] User='${user.username}' (UserId: ${user._id})`
+    );
+    console.log(
+      `[AUTH_PIPELINE] [ACCOUNT_VERIFICATION_STATUS] [CorrelationId: ${correlationId}] emailVerified=${Boolean(user.emailVerified)} accountStatus='${user.accountStatus}'`
+    );
 
     // Check account status
     if (user.accountStatus === 'locked') {
       console.warn(
-        `[AUTH_PIPELINE] [LOGIN_LOCKED_ACCOUNT] [CorrelationId: ${correlationId}] Account is locked for user '${user.username}'`
+        `[AUTH_PIPELINE] [FAILURE_CATEGORY] [CorrelationId: ${correlationId}] FailureCategory='ACCOUNT_LOCKED' Account is locked for user '${user.username}'`
       );
       res.status(403).json({
         success: false,
         message: 'This account has been locked for emergency security. Please complete the account recovery process.',
         isLocked: true,
+        category: 'ACCOUNT_LOCKED',
         userId: user._id,
+        correlationId,
       });
       return;
     }
 
     if (!user.passwordHash) {
       console.error(
-        `[AUTH_PIPELINE] [LOGIN_CORRUPT_RECORD] [CorrelationId: ${correlationId}] User '${user.username}' is missing passwordHash`
+        `[AUTH_PIPELINE] [FAILURE_CATEGORY] [CorrelationId: ${correlationId}] FailureCategory='CORRUPT_RECORD' User '${user.username}' is missing passwordHash`
       );
-      res.status(401).json({ success: false, message: 'Invalid email or password.' });
+      res.status(401).json({ success: false, message: 'Invalid email or password.', category: 'CORRUPT_RECORD', correlationId });
       return;
     }
 
     // Verify Password
     const isPasswordValid = await comparePassword(rawPassword, user.passwordHash);
+    console.log(
+      `[AUTH_PIPELINE] [PASSWORD_COMPARE_RESULT] [CorrelationId: ${correlationId}] match=${isPasswordValid}`
+    );
 
     if (!isPasswordValid) {
       console.warn(
-        `[AUTH_PIPELINE] [LOGIN_PASSWORD_MISMATCH] [CorrelationId: ${correlationId}] Password comparison failed for user '${user.username}'`
+        `[AUTH_PIPELINE] [FAILURE_CATEGORY] [CorrelationId: ${correlationId}] FailureCategory='PASSWORD_MISMATCH' for user '${user.username}'`
       );
       // Log failed attempt
       await LoginHistory.create({
@@ -758,7 +793,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         );
       }
 
-      res.status(401).json({ success: false, message: 'Invalid email or password.' });
+      res.status(401).json({ success: false, message: 'Invalid email or password.', category: 'INVALID_CREDENTIALS', correlationId });
       return;
     }
 
@@ -927,6 +962,10 @@ export async function login(req: Request, res: Response): Promise<void> {
       lastActiveAt: new Date(),
       expiresAt,
     });
+
+    console.log(
+      `[AUTH_PIPELINE] [SESSION_CREATION_RESULT] [CorrelationId: ${correlationId}] Session token established for '${user.username}'`
+    );
 
     const accessToken = signAccessToken({ userId: user._id.toString(), username: user.username });
 

@@ -60,6 +60,11 @@ export function createModelProxy<T extends Record<string, any>>(
       // WRITE: create
       if (prop === 'create') {
         return async function (data: any) {
+          // Pre-assign _id if not already present so both Mongoose and fallback share the identical ID
+          if (data && !data._id) {
+            data._id = new mongoose.Types.ObjectId().toString();
+          }
+
           // Always mirror into fallbackCollection to keep persistence synchronized
           let fallbackDoc: any = null;
           try {

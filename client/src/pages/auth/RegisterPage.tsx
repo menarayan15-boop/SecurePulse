@@ -163,7 +163,7 @@ export const RegisterPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const res = await authApi.verifyEmail(createdUserId, verificationOtp);
+      const res = await authApi.verifyEmail(createdUserId, verificationOtp, email.trim().toLowerCase());
       if (res.success && res.user) {
         loginSuccess(res.user);
         navigate('/dashboard');

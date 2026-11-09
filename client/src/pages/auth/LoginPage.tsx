@@ -172,9 +172,9 @@ export const LoginPage: React.FC = () => {
       } else if (err.status === 401) {
         setErrorMessage('Invalid email or password.');
       } else if (err.status === 503) {
-        setErrorMessage("We couldn't send your verification code. Please try again.");
+        setErrorMessage(err.data?.message || err.message || "Service temporarily unavailable. Please try again shortly.");
       } else {
-        setErrorMessage(err.message || 'Invalid email or password.');
+        setErrorMessage(err.data?.message || err.message || 'An error occurred during login. Please try again.');
       }
     } finally {
       setIsLoading(false);
