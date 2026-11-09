@@ -1,24 +1,45 @@
 // Remote Persistent Storage Synchronization Layer for Serverless Vercel Deployments
 // Ensures that users, sessions, and verification records persist across ephemeral Lambda instances.
 
-const NEON_HOST = process.env.NEON_HOST || 'ep-autumn-band-b5rk8osr.c-7.us-east-2.aws.neon.tech';
-const NEON_CONN =
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  'postgresql://neondb_owner:npg_RL1x0eYVSsrc@ep-autumn-band-b5rk8osr.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require';
+function getDatabaseConfig(): { host: string; connectionString: string } | null {
+  const connectionString =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    '';
+
+  if (!connectionString) return null;
+
+  let host = process.env.NEON_HOST || '';
+  if (!host) {
+    try {
+      const normalized = connectionString.startsWith('postgres')
+        ? connectionString.replace(/^postgres(ql)?:\/\//, 'http://')
+        : connectionString;
+      const parsed = new URL(normalized);
+      // Remove -pooler suffix for the HTTP /sql compute endpoint
+      host = parsed.hostname.replace('-pooler', '');
+    } catch {
+      host = '';
+    }
+  }
+
+  if (!host) return null;
+  return { host, connectionString };
+}
 
 export async function fetchRemoteCollection(collectionName: string): Promise<any[]> {
-  if (!NEON_HOST || !NEON_CONN) return [];
+  const config = getDatabaseConfig();
+  if (!config) return [];
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 3500);
 
   try {
-    const res = await fetch(`https://${NEON_HOST}/sql`, {
+    const res = await fetch(`https://${config.host}/sql`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Neon-Connection-String': NEON_CONN,
+        'Neon-Connection-String': config.connectionString,
       },
       body: JSON.stringify({
         query: `SELECT data FROM securepulse_documents WHERE collection_name = '${collectionName.replace(/'/g, "''")}';`,
@@ -40,7 +61,8 @@ export async function fetchRemoteCollection(collectionName: string): Promise<any
 }
 
 export async function upsertRemoteDoc(collectionName: string, docId: string, data: any): Promise<void> {
-  if (!NEON_HOST || !NEON_CONN || !docId) return;
+  const config = getDatabaseConfig();
+  if (!config || !docId) return;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -60,11 +82,11 @@ export async function upsertRemoteDoc(collectionName: string, docId: string, dat
       ON CONFLICT (collection_name, doc_id) DO UPDATE SET data = EXCLUDED.data, updated_at = NOW();
     `;
 
-    await fetch(`https://${NEON_HOST}/sql`, {
+    await fetch(`https://${config.host}/sql`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Neon-Connection-String': NEON_CONN,
+        'Neon-Connection-String': config.connectionString,
       },
       body: JSON.stringify({ query }),
       signal: controller.signal,
@@ -77,18 +99,18 @@ export async function upsertRemoteDoc(collectionName: string, docId: string, dat
 }
 
 export async function deleteRemoteDoc(collectionName: string, docId: string): Promise<void> {
-  if (!NEON_HOST || !NEON_CONN || !docId) return;
+  const config = getDatabaseConfig();
+  if (!config || !docId) return;
 
   try {
     const query = `DELETE FROM securepulse_documents WHERE collection_name = '${collectionName.replace(/'/g, "''")}' AND doc_id = '${String(docId).replace(/'/g, "''")}';`;
-    fetch(`https://${NEON_HOST}/sql`, {
+    fetch(`https://${config.host}/sql`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Neon-Connection-String': NEON_CONN,
+        'Neon-Connection-String': config.connectionString,
       },
       body: JSON.stringify({ query }),
     }).catch(() => {});
   } catch {}
 }
-
