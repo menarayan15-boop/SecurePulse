@@ -24,6 +24,38 @@ import {
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { securityApi } from '../../api/client';
 
+// Route chunk preload map for instantaneous tab transitions
+const routePreloaders: Record<string, () => Promise<any>> = {
+  '/dashboard': () => import('../../pages/dashboard/OverviewPage'),
+  '/assistant': () => import('../../pages/dashboard/SecurityAssistantPage'),
+  '/phishing': () => import('../../pages/dashboard/PhishingDetectorPage'),
+  '/password-health': () => import('../../pages/dashboard/PasswordHealthPage'),
+  '/confirmations': () => import('../../pages/dashboard/SecurityConfirmationPage'),
+  '/travel': () => import('../../pages/dashboard/SmartTravelPage'),
+  '/learning': () => import('../../pages/dashboard/LearningCenterPage'),
+  '/privacy': () => import('../../pages/dashboard/PrivacyControlPage'),
+  '/risk-analysis': () => import('../../pages/dashboard/AiRiskAnalysisPage'),
+  '/activity': () => import('../../pages/dashboard/LoginActivityPage'),
+  '/impossible-travel': () => import('../../pages/dashboard/ImpossibleTravelPage'),
+  '/alerts': () => import('../../pages/dashboard/SecurityAlertsPage'),
+  '/passkeys': () => import('../../pages/dashboard/PasskeysPage'),
+  '/account-protection': () => import('../../pages/dashboard/AccountProtectionPage'),
+  '/timeline': () => import('../../pages/dashboard/SecurityTimelinePage'),
+  '/emergency-recovery': () => import('../../pages/dashboard/EmergencyRecoveryPage'),
+  '/devices': () => import('../../pages/dashboard/TrustedDevicesPage'),
+  '/profile': () => import('../../pages/dashboard/ProfilePage'),
+};
+
+const preloadedRoutes = new Set<string>();
+function preloadRouteChunk(path: string) {
+  if (preloadedRoutes.has(path)) return;
+  const loader = routePreloaders[path];
+  if (loader) {
+    preloadedRoutes.add(path);
+    loader().catch(() => {});
+  }
+}
+
 interface SidebarProps {
   onCloseMobile?: () => void;
 }
@@ -85,6 +117,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
                   to={item.to}
                   end={item.to === '/'}
                   onClick={onCloseMobile}
+                  onMouseEnter={() => preloadRouteChunk(item.to)}
+                  onFocus={() => preloadRouteChunk(item.to)}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
                       isActive

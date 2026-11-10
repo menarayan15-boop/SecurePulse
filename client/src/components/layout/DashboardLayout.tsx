@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
 import { ShieldAlert } from 'lucide-react';
+import { DashboardSkeleton } from '../common/DashboardSkeleton';
 
 export const DashboardLayout: React.FC = () => {
   const { isAuthenticated, loading, user } = useAuth();
@@ -81,7 +82,9 @@ export const DashboardLayout: React.FC = () => {
         {/* Main Content Area */}
         <main className="flex-1 min-w-0 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
           <div className="max-w-7xl mx-auto w-full min-w-0">
-            <Outlet />
+            <Suspense fallback={<DashboardSkeleton />}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

@@ -93,6 +93,11 @@ function extractIdFromFilter(filter: any): string | null {
   return null;
 }
 
+// In-memory cache timestamp tracking and in-flight promise deduplication
+const lastCollectionSyncTime = new Map<string, number>();
+const inFlightSyncPromises = new Map<string, Promise<void>>();
+const COLLECTION_SYNC_TTL_MS = 15000;
+
 export class EmbeddedCollection<T extends Record<string, any>> {
   private filePath: string;
   private collectionName: string;
@@ -102,6 +107,49 @@ export class EmbeddedCollection<T extends Record<string, any>> {
     this.collectionName = collectionName;
     this.filePath = path.join(DATA_DIR, `${collectionName}.json`);
     this.load();
+  }
+
+  private async syncCollectionFromCloud(force = false): Promise<void> {
+    if (!isCloudDatabaseConfigured()) return;
+
+    const now = Date.now();
+    const lastSync = lastCollectionSyncTime.get(this.collectionName) || 0;
+
+    // Fresh within TTL - skip expensive network query
+    if (!force && lastSync > 0 && now - lastSync < COLLECTION_SYNC_TTL_MS) {
+      return;
+    }
+
+    // Reuse active in-flight query for the same collection
+    const inFlight = inFlightSyncPromises.get(this.collectionName);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const syncPromise = (async () => {
+      try {
+        const remote = await fetchRemoteCollection(this.collectionName);
+        if (Array.isArray(remote)) {
+          for (const r of remote) {
+            if (r?._id) this.syncItemIntoCache(r);
+          }
+        }
+        lastCollectionSyncTime.set(this.collectionName, Date.now());
+      } catch (syncErr: any) {
+        console.warn(
+          `[EmbeddedStore] Remote collection sync notice for '${this.collectionName}':`,
+          syncErr?.message || syncErr
+        );
+        if (this.collectionName === 'users' && force) {
+          throw syncErr;
+        }
+      } finally {
+        inFlightSyncPromises.delete(this.collectionName);
+      }
+    })();
+
+    inFlightSyncPromises.set(this.collectionName, syncPromise);
+    return syncPromise;
   }
 
   private syncItemIntoCache(item: any): void {
@@ -331,6 +379,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
       this.syncItemIntoCache(cleanDoc);
       this.saveToFile();
+      lastCollectionSyncTime.set(this.collectionName, Date.now());
       return doc;
     };
 
@@ -352,14 +401,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
   async countDocuments(filter: Record<string, any> = {}): Promise<number> {
     this.load();
-    if (isCloudDatabaseConfigured()) {
-      try {
-        const remote = await fetchRemoteCollection(this.collectionName);
-        for (const r of remote) {
-          if (r?._id) this.syncItemIntoCache(r);
-        }
-      } catch {}
-    }
+    await this.syncCollectionFromCloud(false);
     return this.items.filter((item) => this.matchFilter(item, filter)).length;
   }
 
@@ -379,6 +421,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
     this.syncItemIntoCache(item);
     this.saveToFile();
+    lastCollectionSyncTime.set(this.collectionName, Date.now());
     return this.wrapDoc(item);
   }
 
@@ -399,6 +442,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
       created.push(this.wrapDoc(item));
     }
     this.saveToFile();
+    lastCollectionSyncTime.set(this.collectionName, Date.now());
     return created;
   }
 
@@ -448,19 +492,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         try {
           this.load();
 
-          if (isCloudDatabaseConfigured()) {
-            try {
-              const remote = await fetchRemoteCollection(this.collectionName);
-              if (Array.isArray(remote)) {
-                for (const r of remote) {
-                  if (r?._id) this.syncItemIntoCache(r);
-                }
-              }
-            } catch (syncErr) {
-              // If collection query fails, log and fallback to local cache
-              console.warn(`[EmbeddedStore] Remote collection sync notice for '${this.collectionName}':`, (syncErr as any).message);
-            }
-          }
+          await this.syncCollectionFromCloud(false);
 
           let res = this.items.filter((item) => this.matchFilter(item, filter));
           if (queryObj._sortField) {
@@ -590,17 +622,12 @@ export class EmbeddedCollection<T extends Record<string, any>> {
           }
           let raw = matchedItems[0] || null;
 
-          // 4. If not found in cache and cloud DB is configured, sync collection
+          // 4. If not found in cache and cloud DB is configured, force fresh sync
           if (!raw && isCloudDatabaseConfigured()) {
             try {
-              const remote = await fetchRemoteCollection(this.collectionName);
-              if (Array.isArray(remote) && remote.length > 0) {
-                for (const r of remote) {
-                  if (r?._id) this.syncItemIntoCache(r);
-                }
-                const refreshedMatches = this.items.filter((item) => this.matchFilter(item, filter));
-                raw = refreshedMatches[0] || null;
-              }
+              await this.syncCollectionFromCloud(true);
+              const refreshedMatches = this.items.filter((item) => this.matchFilter(item, filter));
+              raw = refreshedMatches[0] || null;
             } catch (err) {
               if (this.collectionName === 'users') {
                 throw err;
@@ -668,19 +695,13 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
     this.syncItemIntoCache(item);
     this.saveToFile();
+    lastCollectionSyncTime.set(this.collectionName, Date.now());
     return { modifiedCount: 1 };
   }
 
   async updateMany(filter: Record<string, any>, update: Record<string, any>): Promise<{ modifiedCount: number }> {
     this.load();
-    if (isCloudDatabaseConfigured()) {
-      try {
-        const remote = await fetchRemoteCollection(this.collectionName);
-        for (const r of remote) {
-          if (r?._id) this.syncItemIntoCache(r);
-        }
-      } catch {}
-    }
+    await this.syncCollectionFromCloud(false);
 
     let count = 0;
     const modifiedItems: any[] = [];
@@ -707,6 +728,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
     if (count > 0) {
       this.saveToFile();
+      lastCollectionSyncTime.set(this.collectionName, Date.now());
     }
     return { modifiedCount: count };
   }
@@ -734,8 +756,10 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
     if (targetDoc?._id && isCloudDatabaseConfigured()) {
       await deleteRemoteDoc(this.collectionName, targetDoc._id);
+      lastCollectionSyncTime.set(this.collectionName, Date.now());
       return { deletedCount: 1 };
     }
+    lastCollectionSyncTime.set(this.collectionName, Date.now());
     return { deletedCount: targetDoc ? 1 : 0 };
   }
 
@@ -748,6 +772,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
     if (deletedCount > 0) {
       this.saveToFile();
+      lastCollectionSyncTime.set(this.collectionName, Date.now());
       if (isCloudDatabaseConfigured()) {
         for (const item of toRemove) {
           if (item?._id) {

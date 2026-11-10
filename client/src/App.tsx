@@ -14,27 +14,27 @@ import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { AccountRecoveryPage } from './pages/auth/AccountRecoveryPage';
 
-// Authenticated Dashboard Pages
-import { OverviewPage } from './pages/dashboard/OverviewPage';
-import { AiRiskAnalysisPage } from './pages/dashboard/AiRiskAnalysisPage';
-import { LoginActivityPage } from './pages/dashboard/LoginActivityPage';
-import { ImpossibleTravelPage } from './pages/dashboard/ImpossibleTravelPage';
-import { SecurityAlertsPage } from './pages/dashboard/SecurityAlertsPage';
-import { PasskeysPage } from './pages/dashboard/PasskeysPage';
-import { AccountProtectionPage } from './pages/dashboard/AccountProtectionPage';
-import { SecurityTimelinePage } from './pages/dashboard/SecurityTimelinePage';
-import { EmergencyRecoveryPage } from './pages/dashboard/EmergencyRecoveryPage';
-import { TrustedDevicesPage } from './pages/dashboard/TrustedDevicesPage';
-import { ActiveSessionsPage } from './pages/dashboard/ActiveSessionsPage';
-import { SecuritySettingsPage } from './pages/dashboard/SecuritySettingsPage';
-import { ProfilePage } from './pages/dashboard/ProfilePage';
-import { SecurityAssistantPage } from './pages/dashboard/SecurityAssistantPage';
-import { PhishingDetectorPage } from './pages/dashboard/PhishingDetectorPage';
-import { PasswordHealthPage } from './pages/dashboard/PasswordHealthPage';
-import { SecurityConfirmationPage } from './pages/dashboard/SecurityConfirmationPage';
-import { SmartTravelPage } from './pages/dashboard/SmartTravelPage';
-import { LearningCenterPage } from './pages/dashboard/LearningCenterPage';
-import { PrivacyControlPage } from './pages/dashboard/PrivacyControlPage';
+// Authenticated Dashboard Pages (Route-level lazy loading for optimal load time)
+const OverviewPage = React.lazy(() => import('./pages/dashboard/OverviewPage').then((m) => ({ default: m.OverviewPage })));
+const AiRiskAnalysisPage = React.lazy(() => import('./pages/dashboard/AiRiskAnalysisPage').then((m) => ({ default: m.AiRiskAnalysisPage })));
+const LoginActivityPage = React.lazy(() => import('./pages/dashboard/LoginActivityPage').then((m) => ({ default: m.LoginActivityPage })));
+const ImpossibleTravelPage = React.lazy(() => import('./pages/dashboard/ImpossibleTravelPage').then((m) => ({ default: m.ImpossibleTravelPage })));
+const SecurityAlertsPage = React.lazy(() => import('./pages/dashboard/SecurityAlertsPage').then((m) => ({ default: m.SecurityAlertsPage })));
+const PasskeysPage = React.lazy(() => import('./pages/dashboard/PasskeysPage').then((m) => ({ default: m.PasskeysPage })));
+const AccountProtectionPage = React.lazy(() => import('./pages/dashboard/AccountProtectionPage').then((m) => ({ default: m.AccountProtectionPage })));
+const SecurityTimelinePage = React.lazy(() => import('./pages/dashboard/SecurityTimelinePage').then((m) => ({ default: m.SecurityTimelinePage })));
+const EmergencyRecoveryPage = React.lazy(() => import('./pages/dashboard/EmergencyRecoveryPage').then((m) => ({ default: m.EmergencyRecoveryPage })));
+const TrustedDevicesPage = React.lazy(() => import('./pages/dashboard/TrustedDevicesPage').then((m) => ({ default: m.TrustedDevicesPage })));
+const ActiveSessionsPage = React.lazy(() => import('./pages/dashboard/ActiveSessionsPage').then((m) => ({ default: m.ActiveSessionsPage })));
+const SecuritySettingsPage = React.lazy(() => import('./pages/dashboard/SecuritySettingsPage').then((m) => ({ default: m.SecuritySettingsPage })));
+const ProfilePage = React.lazy(() => import('./pages/dashboard/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const SecurityAssistantPage = React.lazy(() => import('./pages/dashboard/SecurityAssistantPage').then((m) => ({ default: m.SecurityAssistantPage })));
+const PhishingDetectorPage = React.lazy(() => import('./pages/dashboard/PhishingDetectorPage').then((m) => ({ default: m.PhishingDetectorPage })));
+const PasswordHealthPage = React.lazy(() => import('./pages/dashboard/PasswordHealthPage').then((m) => ({ default: m.PasswordHealthPage })));
+const SecurityConfirmationPage = React.lazy(() => import('./pages/dashboard/SecurityConfirmationPage').then((m) => ({ default: m.SecurityConfirmationPage })));
+const SmartTravelPage = React.lazy(() => import('./pages/dashboard/SmartTravelPage').then((m) => ({ default: m.SmartTravelPage })));
+const LearningCenterPage = React.lazy(() => import('./pages/dashboard/LearningCenterPage').then((m) => ({ default: m.LearningCenterPage })));
+const PrivacyControlPage = React.lazy(() => import('./pages/dashboard/PrivacyControlPage').then((m) => ({ default: m.PrivacyControlPage })));
 
 export function App() {
   return (

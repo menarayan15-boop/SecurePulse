@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { userApi } from '../api/client';
 
 type ThemeMode = 'light' | 'dark';
@@ -91,7 +91,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => clearInterval(interval);
   }, [preference]);
 
-  const setPreference = async (newPref: ThemePreference) => {
+  const setPreference = useCallback(async (newPref: ThemePreference) => {
     setPreferenceState(newPref);
     localStorage.setItem('securepulse_theme_pref', newPref);
 
@@ -105,9 +105,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch {
       // Ignored if not yet logged in
     }
-  };
+  }, []);
 
-  const applyUserPreference = (pref: ThemePreference) => {
+  const applyUserPreference = useCallback((pref: ThemePreference) => {
     if (pref) {
       setPreferenceState(pref);
       localStorage.setItem('securepulse_theme_pref', pref);
@@ -115,22 +115,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setTheme(calc.theme);
       setIsAutoCalculated(calc.isAuto);
     }
-  };
+  }, []);
 
-  return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        preference,
-        istTime,
-        isAutoCalculated,
-        setPreference,
-        applyUserPreference,
-      }}
-    >
-      {children}
-    </ThemeContext.Provider>
+  const value = useMemo(
+    () => ({
+      theme,
+      preference,
+      istTime,
+      isAutoCalculated,
+      setPreference,
+      applyUserPreference,
+    }),
+    [theme, preference, istTime, isAutoCalculated, setPreference, applyUserPreference]
   );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {

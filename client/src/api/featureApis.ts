@@ -6,6 +6,47 @@
 
 import { apiRequest } from './client';
 
+// Client-side in-memory cache and in-flight deduplication for instant tab navigation
+const clientApiCache = new Map<string, { timestamp: number; data: any }>();
+const inFlightClientRequests = new Map<string, Promise<any>>();
+const CLIENT_CACHE_TTL_MS = 15000; // 15 seconds
+
+export function invalidateFeatureCache(keyPrefix?: string): void {
+  if (!keyPrefix) {
+    clientApiCache.clear();
+    return;
+  }
+  for (const key of clientApiCache.keys()) {
+    if (key.startsWith(keyPrefix)) {
+      clientApiCache.delete(key);
+    }
+  }
+}
+
+async function cachedGetRequest<T>(endpoint: string, ttlMs = CLIENT_CACHE_TTL_MS): Promise<T> {
+  const cached = clientApiCache.get(endpoint);
+  if (cached && Date.now() - cached.timestamp < ttlMs) {
+    return cached.data as T;
+  }
+
+  const existing = inFlightClientRequests.get(endpoint);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+
+  const reqPromise = apiRequest<T>(endpoint)
+    .then((res) => {
+      clientApiCache.set(endpoint, { timestamp: Date.now(), data: res });
+      return res;
+    })
+    .finally(() => {
+      inFlightClientRequests.delete(endpoint);
+    });
+
+  inFlightClientRequests.set(endpoint, reqPromise);
+  return reqPromise;
+}
+
 // 1. Feature 1: AI Security Assistant API
 export const securityAssistantApi = {
   chat: (message: string) =>
@@ -23,7 +64,7 @@ export const securityAssistantApi = {
     }),
 
   getContext: () =>
-    apiRequest<{
+    cachedGetRequest<{
       success: boolean;
       summary: {
         unreadAlerts: number;
@@ -46,20 +87,26 @@ export interface IPhishingScanResult {
 }
 
 export const phishingApi = {
-  scanUrl: (url: string) =>
-    apiRequest<{ success: boolean; analysis: IPhishingScanResult }>('/phishing/scan-url', {
+  scanUrl: async (url: string) => {
+    const res = await apiRequest<{ success: boolean; analysis: IPhishingScanResult }>('/phishing/scan-url', {
       method: 'POST',
       body: JSON.stringify({ url }),
-    }),
+    });
+    invalidateFeatureCache('/phishing/history');
+    return res;
+  },
 
-  scanContent: (content: string, type: 'email' | 'message' = 'email') =>
-    apiRequest<{ success: boolean; analysis: IPhishingScanResult }>('/phishing/scan-content', {
+  scanContent: async (content: string, type: 'email' | 'message' = 'email') => {
+    const res = await apiRequest<{ success: boolean; analysis: IPhishingScanResult }>('/phishing/scan-content', {
       method: 'POST',
       body: JSON.stringify({ content, type }),
-    }),
+    });
+    invalidateFeatureCache('/phishing/history');
+    return res;
+  },
 
   getHistory: () =>
-    apiRequest<{
+    cachedGetRequest<{
       success: boolean;
       scans: Array<{
         _id: string;
@@ -77,7 +124,7 @@ export const phishingApi = {
 // 3. Feature 3: Password Health Monitor API
 export const passwordHealthApi = {
   getAccountSummary: () =>
-    apiRequest<{
+    cachedGetRequest<{
       success: boolean;
       summary: {
         daysSinceLastUpdate: number;
@@ -94,7 +141,7 @@ export const passwordHealthApi = {
 // 4. Feature 4: Privacy Control Center API
 export const privacyApi = {
   getOverview: () =>
-    apiRequest<{
+    cachedGetRequest<{
       success: boolean;
       dataInventory: {
         identity: {
@@ -122,31 +169,40 @@ export const privacyApi = {
       };
     }>('/privacy/overview'),
 
-  updatePreferences: (preferences: {
+  updatePreferences: async (preferences: {
     loginAlertsEmail: boolean;
     criticalAlertsEmail: boolean;
     travelAlertsEmail: boolean;
     weeklySecurityDigest: boolean;
     dataRetentionDays: number;
-  }) =>
-    apiRequest('/privacy/preferences', {
+  }) => {
+    const res = await apiRequest('/privacy/preferences', {
       method: 'PUT',
       body: JSON.stringify(preferences),
-    }),
+    });
+    invalidateFeatureCache('/privacy');
+    return res;
+  },
 
   exportData: () => apiRequest('/privacy/export'),
 
-  cleanupTelemetry: (retentionDays: number) =>
-    apiRequest<{ success: boolean; message: string; deletedCount: number }>('/privacy/retention/cleanup', {
+  cleanupTelemetry: async (retentionDays: number) => {
+    const res = await apiRequest<{ success: boolean; message: string; deletedCount: number }>('/privacy/retention/cleanup', {
       method: 'POST',
       body: JSON.stringify({ retentionDays }),
-    }),
+    });
+    invalidateFeatureCache('/privacy');
+    return res;
+  },
 
-  deleteAccount: (confirmationPhrase: string) =>
-    apiRequest<{ success: boolean; message: string }>('/privacy/delete-request', {
+  deleteAccount: async (confirmationPhrase: string) => {
+    const res = await apiRequest<{ success: boolean; message: string }>('/privacy/delete-request', {
       method: 'POST',
       body: JSON.stringify({ confirmationPhrase }),
-    }),
+    });
+    invalidateFeatureCache('/privacy');
+    return res;
+  },
 };
 
 // 5. Feature 5: "Was This You?" Security Confirmation API
@@ -166,10 +222,10 @@ export interface ISecurityConfirmationItem {
 
 export const securityConfirmationApi = {
   getPending: () =>
-    apiRequest<{ success: boolean; confirmations: ISecurityConfirmationItem[] }>('/security-confirmations/pending'),
+    cachedGetRequest<{ success: boolean; confirmations: ISecurityConfirmationItem[] }>('/security-confirmations/pending'),
 
-  respond: (id: string, decision: 'legitimate' | 'fraudulent') =>
-    apiRequest<{
+  respond: async (id: string, decision: 'legitimate' | 'fraudulent') => {
+    const res = await apiRequest<{
       success: boolean;
       message: string;
       confirmation: ISecurityConfirmationItem;
@@ -177,7 +233,10 @@ export const securityConfirmationApi = {
     }>(`/security-confirmations/${id}/respond`, {
       method: 'POST',
       body: JSON.stringify({ decision }),
-    }),
+    });
+    invalidateFeatureCache('/security-confirmations');
+    return res;
+  },
 };
 
 // 6. Feature 6: Cybersecurity Learning Center API
@@ -202,7 +261,7 @@ export interface ILearningModuleItem {
 
 export const learningApi = {
   getModules: () =>
-    apiRequest<{
+    cachedGetRequest<{
       success: boolean;
       modules: ILearningModuleItem[];
       userProgress: {
@@ -213,8 +272,8 @@ export const learningApi = {
       };
     }>('/learning/modules'),
 
-  submitQuiz: (moduleId: string, answers: Record<string, number>) =>
-    apiRequest<{
+  submitQuiz: async (moduleId: string, answers: Record<string, number>) => {
+    const res = await apiRequest<{
       success: boolean;
       passed: boolean;
       score: string;
@@ -232,7 +291,10 @@ export const learningApi = {
     }>('/learning/submit-quiz', {
       method: 'POST',
       body: JSON.stringify({ moduleId, answers }),
-    }),
+    });
+    invalidateFeatureCache('/learning/modules');
+    return res;
+  },
 };
 
 // 7. Feature 7: Smart Travel Mode API
@@ -249,7 +311,7 @@ export interface ITravelPlanItem {
 
 export const travelApi = {
   getStatus: () =>
-    apiRequest<{
+    cachedGetRequest<{
       success: boolean;
       travelModeEnabled: boolean;
       activePlan?: ITravelPlanItem;
@@ -258,21 +320,24 @@ export const travelApi = {
       policyNotice: string;
     }>('/travel/status'),
 
-  createPlan: (data: {
+  createPlan: async (data: {
     destinationCity: string;
     destinationCountry: string;
     startDate: string;
     endDate: string;
     purpose?: string;
     notes?: string;
-  }) =>
-    apiRequest<{ success: boolean; message: string; plan: ITravelPlanItem }>('/travel/plan', {
+  }) => {
+    const res = await apiRequest<{ success: boolean; message: string; plan: ITravelPlanItem }>('/travel/plan', {
       method: 'POST',
       body: JSON.stringify(data),
-    }),
+    });
+    invalidateFeatureCache('/travel');
+    return res;
+  },
 
   getPlanDetails: (id: string) =>
-    apiRequest<{
+    cachedGetRequest<{
       success: boolean;
       plan: ITravelPlanItem;
       relatedLogins: Array<{
@@ -288,7 +353,7 @@ export const travelApi = {
       }>;
     }>(`/travel/plan/${id}`),
 
-  updatePlan: (
+  updatePlan: async (
     id: string,
     data: {
       destinationCity: string;
@@ -298,21 +363,30 @@ export const travelApi = {
       purpose?: string;
       notes?: string;
     }
-  ) =>
-    apiRequest<{ success: boolean; message: string; plan: ITravelPlanItem }>(`/travel/plan/${id}`, {
+  ) => {
+    const res = await apiRequest<{ success: boolean; message: string; plan: ITravelPlanItem }>(`/travel/plan/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
-    }),
+    });
+    invalidateFeatureCache('/travel');
+    return res;
+  },
 
-  deletePlan: (id: string) =>
-    apiRequest<{ success: boolean; message: string }>(`/travel/plan/${id}`, {
+  deletePlan: async (id: string) => {
+    const res = await apiRequest<{ success: boolean; message: string }>(`/travel/plan/${id}`, {
       method: 'DELETE',
-    }),
+    });
+    invalidateFeatureCache('/travel');
+    return res;
+  },
 
-  toggle: (enabled: boolean) =>
-    apiRequest<{ success: boolean; travelModeEnabled: boolean; message: string }>('/travel/toggle', {
+  toggle: async (enabled: boolean) => {
+    const res = await apiRequest<{ success: boolean; travelModeEnabled: boolean; message: string }>('/travel/toggle', {
       method: 'PUT',
       body: JSON.stringify({ enabled }),
-    }),
+    });
+    invalidateFeatureCache('/travel');
+    return res;
+  },
 };
 
