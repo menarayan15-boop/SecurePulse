@@ -271,6 +271,39 @@ export const travelApi = {
       body: JSON.stringify(data),
     }),
 
+  getPlanDetails: (id: string) =>
+    apiRequest<{
+      success: boolean;
+      plan: ITravelPlanItem;
+      relatedLogins: Array<{
+        _id: string;
+        timestamp: string;
+        city: string;
+        country: string;
+        ipAddress: string;
+        browser: string;
+        os: string;
+        status: string;
+        riskScore: number;
+      }>;
+    }>(`/travel/plan/${id}`),
+
+  updatePlan: (
+    id: string,
+    data: {
+      destinationCity: string;
+      destinationCountry: string;
+      startDate: string;
+      endDate: string;
+      purpose?: string;
+      notes?: string;
+    }
+  ) =>
+    apiRequest<{ success: boolean; message: string; plan: ITravelPlanItem }>(`/travel/plan/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
   deletePlan: (id: string) =>
     apiRequest<{ success: boolean; message: string }>(`/travel/plan/${id}`, {
       method: 'DELETE',

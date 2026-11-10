@@ -91,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-white/85 dark:bg-cyber-surface/85 backdrop-blur-md border-b border-gray-200 dark:border-cyber-border transition-colors duration-200">
+    <header className="sticky top-0 z-30 w-full flex-shrink-0 box-border h-16 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md border-b border-gray-200 dark:border-cyber-border transition-colors duration-200">
       <div className="h-full px-4 sm:px-6 flex items-center justify-between">
         {/* Left: Mobile hamburger & Logo */}
         <div className="flex items-center gap-3">
