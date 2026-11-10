@@ -1,6 +1,6 @@
 import http from 'http';
-import { probeCloudDatabaseHealth } from './config/cloudSync';
-import { EmbeddedCollection } from './config/embeddedStore';
+import { probeCloudDatabaseHealth } from './config/cloudSync.js';
+import { EmbeddedCollection } from './config/embeddedStore.js';
 
 async function main() {
   console.log('========================================================');
