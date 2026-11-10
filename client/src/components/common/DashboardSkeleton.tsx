@@ -64,3 +64,4 @@ export const DashboardSkeleton: React.FC = () => {
     </div>
   );
 };
+
