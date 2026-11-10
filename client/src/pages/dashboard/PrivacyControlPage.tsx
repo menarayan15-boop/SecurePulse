@@ -125,7 +125,7 @@ export const PrivacyControlPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600/10 via-emerald-500/5 to-transparent border border-purple-500/20 rounded-2xl p-6">
+      <div className="glass-card-static bg-gradient-to-r from-purple-600/15 via-emerald-500/10 to-transparent border border-purple-500/25 rounded-2xl p-6 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-600/20">
             <Lock className="w-6 h-6" />
@@ -146,14 +146,14 @@ export const PrivacyControlPage: React.FC = () => {
 
       {/* Data Inventory Disclosure Card */}
       {overview && (
-        <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-6 shadow-lg space-y-4">
           <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Database className="w-4 h-4 text-emerald-500" />
             <span>Account Telemetry & Identity Inventory</span>
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border space-y-1">
+            <div className="p-4 rounded-xl bg-white/40 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
               <div className="text-xs text-gray-400 dark:text-gray-500">Identity Details</div>
               <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                 {overview.identity.fullName}
@@ -161,7 +161,7 @@ export const PrivacyControlPage: React.FC = () => {
               <div className="text-xs text-gray-500 font-mono truncate">{overview.identity.email}</div>
             </div>
 
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border space-y-1">
+            <div className="p-4 rounded-xl bg-white/40 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
               <div className="text-xs text-gray-400 dark:text-gray-500">Authentication Telemetry</div>
               <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                 {overview.telemetry.totalStoredLogins} Login Event(s)
@@ -169,7 +169,7 @@ export const PrivacyControlPage: React.FC = () => {
               <div className="text-xs text-gray-500">{overview.telemetry.registeredDevices} Device(s) Tracked</div>
             </div>
 
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border space-y-1">
+            <div className="p-4 rounded-xl bg-white/40 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 space-y-1">
               <div className="text-xs text-gray-400 dark:text-gray-500">Geolocation Accuracy</div>
               <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                 Coarse GeoIP (City Level)
@@ -183,7 +183,7 @@ export const PrivacyControlPage: React.FC = () => {
       )}
 
       {/* Notification & Alert Preferences */}
-      <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-6 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Bell className="w-4 h-4 text-emerald-500" />
@@ -198,7 +198,7 @@ export const PrivacyControlPage: React.FC = () => {
         </div>
 
         <div className="space-y-3">
-          <label className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border cursor-pointer">
+          <label className="flex items-center justify-between p-3 rounded-xl bg-white/40 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 cursor-pointer">
             <div>
               <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                 Sign-In Notification Emails
@@ -215,7 +215,7 @@ export const PrivacyControlPage: React.FC = () => {
             />
           </label>
 
-          <label className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border cursor-pointer">
+          <label className="flex items-center justify-between p-3 rounded-xl bg-white/40 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 cursor-pointer">
             <div>
               <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                 Critical Threat & Anomaly Alerts
@@ -275,7 +275,7 @@ export const PrivacyControlPage: React.FC = () => {
           </p>
           <button
             onClick={handleExportData}
-            className="w-full px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-cyber-card hover:bg-gray-200 dark:hover:bg-cyber-border text-gray-800 dark:text-gray-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-cyber-border"
+            className="w-full px-4 py-2.5 rounded-xl bg-white/40 dark:bg-white/[0.04] hover:bg-white/60 dark:hover:bg-white/[0.08] text-gray-800 dark:text-gray-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-white/10 shadow-sm"
           >
             <Download className="w-4 h-4" />
             <span>Download My JSON Export</span>
@@ -283,7 +283,7 @@ export const PrivacyControlPage: React.FC = () => {
         </div>
 
         {/* Retention Cleanup Card */}
-        <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-6 shadow-lg space-y-4">
           <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald-500" />
             <span>Data Retention & Pruning</span>
@@ -295,7 +295,7 @@ export const PrivacyControlPage: React.FC = () => {
             <select
               value={preferences.dataRetentionDays}
               onChange={(e) => setPreferences({ ...preferences, dataRetentionDays: Number(e.target.value) })}
-              className="bg-gray-50 dark:bg-cyber-card border border-gray-200 dark:border-cyber-border rounded-xl px-3 py-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none"
+              className="bg-white/50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 backdrop-blur-sm rounded-xl px-3 py-2 text-xs text-gray-800 dark:text-gray-200 focus:outline-none"
             >
               <option value={30}>30 Days Retention</option>
               <option value={60}>60 Days Retention</option>
@@ -305,7 +305,7 @@ export const PrivacyControlPage: React.FC = () => {
             <button
               onClick={handleCleanupRetention}
               disabled={cleaningUp}
-              className="flex-1 px-4 py-2 rounded-xl bg-gray-100 dark:bg-cyber-card hover:bg-gray-200 dark:hover:bg-cyber-border text-gray-800 dark:text-gray-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors border border-gray-200 dark:border-cyber-border"
+              className="flex-1 px-4 py-2 rounded-xl bg-white/40 dark:bg-white/[0.04] hover:bg-white/60 dark:hover:bg-white/[0.08] text-gray-800 dark:text-gray-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors border border-gray-200 dark:border-white/10 shadow-sm"
             >
               {cleaningUp ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
               <span>Prune Old Logs</span>
@@ -320,7 +320,7 @@ export const PrivacyControlPage: React.FC = () => {
       </div>
 
       {/* Danger Zone: Account Deletion */}
-      <div className="bg-white dark:bg-cyber-surface border border-rose-200 dark:border-rose-900/50 rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="glass-card-static border border-rose-500/25 dark:border-rose-500/25 rounded-2xl p-6 shadow-lg space-y-4">
         <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm">
           <AlertTriangle className="w-4 h-4" />
           <span>Danger Zone: Permanent Account Deletion</span>
@@ -330,7 +330,7 @@ export const PrivacyControlPage: React.FC = () => {
         </p>
         <button
           onClick={() => setDeleteModalOpen(true)}
-          className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 font-semibold text-xs transition-colors"
+          className="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-950/40 dark:hover:bg-rose-950/60 border border-rose-500/25 text-rose-600 dark:text-rose-400 font-semibold text-xs transition-colors shadow-sm"
         >
           Request Account Deletion
         </button>
@@ -338,8 +338,8 @@ export const PrivacyControlPage: React.FC = () => {
 
       {/* Deletion Confirmation Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-cyber-surface border border-rose-300 dark:border-rose-900 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+          <div className="glass-modal border border-rose-500/30 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 relative overflow-hidden">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950 text-rose-600 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6" />
             </div>

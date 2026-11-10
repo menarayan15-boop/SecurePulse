@@ -31,21 +31,21 @@ export const ConfirmationModal: React.FC<Props> = ({
   const canConfirm = !requirePhrase || typedPhrase.trim() === requirePhrase;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+      <div className="glass-modal max-w-md w-full p-6 sm:p-7 rounded-3xl border border-gray-200/80 dark:border-white/10 shadow-2xl relative">
         <button
           onClick={onCancel}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3 mb-4">
           <div
-            className={`p-3 rounded-xl ${
+            className={`p-3 rounded-2xl ${
               isDestructive
-                ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400'
-                : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400'
+                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25'
+                : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
             }`}
           >
             <AlertOctagon className="w-6 h-6" />
@@ -67,16 +67,16 @@ export const ConfirmationModal: React.FC<Props> = ({
               value={typedPhrase}
               onChange={(e) => setTypedPhrase(e.target.value)}
               placeholder={requirePhrase}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-cyber-border bg-gray-50 dark:bg-cyber-card text-gray-900 dark:text-gray-100 text-sm focus:border-rose-500 outline-none font-mono"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-white/50 dark:bg-white/[0.04] backdrop-blur-sm text-gray-900 dark:text-gray-100 text-sm focus:border-rose-500 outline-none font-mono transition-all"
             />
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-3 pt-2">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-300 dark:border-cyber-border text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-cyber-card transition-colors"
+            className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-300 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.05] transition-colors"
           >
             {cancelText}
           </button>
@@ -89,8 +89,8 @@ export const ConfirmationModal: React.FC<Props> = ({
             }}
             className={`px-4 py-2 text-sm font-semibold rounded-xl text-white transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed ${
               isDestructive
-                ? 'bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20'
-                : 'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20'
+                ? 'bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/25'
+                : 'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/25'
             }`}
           >
             {confirmText}

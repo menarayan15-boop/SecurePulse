@@ -159,7 +159,7 @@ export const PasswordHealthPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600/10 via-emerald-500/5 to-transparent border border-blue-500/20 rounded-2xl p-6">
+      <div className="glass-card-static bg-gradient-to-r from-blue-600/15 via-emerald-500/10 to-transparent border border-blue-500/25 rounded-2xl p-6 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/20">
             <KeyRound className="w-6 h-6" />
@@ -180,8 +180,8 @@ export const PasswordHealthPage: React.FC = () => {
 
       {/* Account Password Hygiene Summary Card */}
       {accountSummary && (
-        <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 dark:border-cyber-border gap-4">
+        <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-6 shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 dark:border-white/10 gap-4">
             <div>
               <div className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold">
                 Account Password Age
@@ -193,7 +193,7 @@ export const PasswordHealthPage: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500 dark:text-gray-400">Authentication Method:</span>
-              <span className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-cyber-card text-xs font-mono font-semibold text-gray-800 dark:text-gray-200">
+              <span className="px-2.5 py-1 rounded-lg bg-white/40 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 text-xs font-mono font-semibold text-gray-800 dark:text-gray-200">
                 {accountSummary.preferredAuthMethod.toUpperCase()}
               </span>
             </div>
@@ -203,7 +203,7 @@ export const PasswordHealthPage: React.FC = () => {
             {accountSummary.recommendations.map((rec: string, i: number) => (
               <div
                 key={i}
-                className="text-xs p-3 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border text-gray-600 dark:text-gray-300 flex items-start gap-2"
+                className="text-xs p-3 rounded-xl bg-white/40 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 text-gray-600 dark:text-gray-300 flex items-start gap-2"
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                 <span>{rec}</span>
@@ -214,7 +214,7 @@ export const PasswordHealthPage: React.FC = () => {
       )}
 
       {/* Interactive Strength Meter */}
-      <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-6 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">
             Interactive Password Strength Analyzer
@@ -343,7 +343,7 @@ export const PasswordHealthPage: React.FC = () => {
       </div>
 
       {/* Generator Card */}
-      <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-6 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-emerald-500" />

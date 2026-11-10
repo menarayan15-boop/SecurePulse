@@ -37,8 +37,9 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestOpti
   };
 
   // Attach in-memory access token as Authorization Bearer header if available
-  if (inMemoryAccessToken && !requestHeaders['Authorization']) {
-    requestHeaders['Authorization'] = `Bearer ${inMemoryAccessToken}`;
+  const activeToken = inMemoryAccessToken || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('sp_token') : null);
+  if (activeToken && !requestHeaders['Authorization']) {
+    requestHeaders['Authorization'] = `Bearer ${activeToken}`;
   }
 
   const config: RequestInit = {

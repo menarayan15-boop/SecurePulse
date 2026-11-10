@@ -90,7 +90,7 @@ export const PhishingDetectorPage: React.FC = () => {
   return (
     <div className="w-full max-w-full min-w-0 space-y-6 box-border">
       {/* Header Banner */}
-      <div className="w-full max-w-full min-w-0 box-border bg-gradient-to-r from-rose-600/10 via-amber-500/5 to-transparent border border-rose-500/20 rounded-2xl p-4 sm:p-6">
+      <div className="w-full max-w-full min-w-0 box-border glass-card-static bg-gradient-to-r from-rose-600/15 via-amber-500/10 to-transparent border border-rose-500/25 rounded-2xl p-4 sm:p-6 shadow-lg">
         <div className="flex items-start sm:items-center gap-3 sm:gap-4 w-full min-w-0">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-lg shadow-rose-500/20 flex-shrink-0 mt-0.5 sm:mt-0">
             <ShieldAlert className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -110,7 +110,7 @@ export const PhishingDetectorPage: React.FC = () => {
       </div>
 
       {/* Responsive Navigation Tabs */}
-      <div className="w-full max-w-full min-w-0 border-b border-gray-200 dark:border-cyber-border pb-2">
+      <div className="w-full max-w-full min-w-0 border-b border-gray-200/70 dark:border-white/10 pb-2">
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 w-full min-w-0">
           <button
             onClick={() => {
@@ -118,10 +118,10 @@ export const PhishingDetectorPage: React.FC = () => {
               setScanResult(null);
               setError(null);
             }}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors flex-shrink-0 whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex-shrink-0 whitespace-nowrap ${
               activeTab === 'url'
-                ? 'bg-emerald-500 text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-cyber-card'
+                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-md backdrop-blur-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-white/[0.04]'
             }`}
           >
             <Globe className="w-4 h-4 flex-shrink-0" />
@@ -134,10 +134,10 @@ export const PhishingDetectorPage: React.FC = () => {
               setScanResult(null);
               setError(null);
             }}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors flex-shrink-0 whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex-shrink-0 whitespace-nowrap ${
               activeTab === 'content'
-                ? 'bg-emerald-500 text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-cyber-card'
+                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-md backdrop-blur-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-white/[0.04]'
             }`}
           >
             <Mail className="w-4 h-4 flex-shrink-0" />
@@ -150,10 +150,10 @@ export const PhishingDetectorPage: React.FC = () => {
               setScanResult(null);
               setError(null);
             }}
-            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-colors flex-shrink-0 whitespace-nowrap ${
+            className={`flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex-shrink-0 whitespace-nowrap ${
               activeTab === 'history'
-                ? 'bg-emerald-500 text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-cyber-card'
+                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-md backdrop-blur-md'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-white/[0.04]'
             }`}
           >
             <History className="w-4 h-4 flex-shrink-0" />
@@ -164,7 +164,7 @@ export const PhishingDetectorPage: React.FC = () => {
 
       {/* Tab 1: URL Scanner */}
       {activeTab === 'url' && (
-        <div className="w-full max-w-full min-w-0 box-border bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+        <div className="w-full max-w-full min-w-0 box-border glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 w-full min-w-0 items-stretch">
             <div className="flex-1 min-w-0 relative">
               <input
@@ -173,13 +173,13 @@ export const PhishingDetectorPage: React.FC = () => {
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="Enter suspicious URL (e.g. https://paypal-security-login.top/verify)..."
                 disabled={loading}
-                className="w-full h-12 box-border bg-gray-50 dark:bg-cyber-card border border-gray-200 dark:border-cyber-border rounded-xl px-4 text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono transition-all"
+                className="w-full h-12 box-border bg-white/50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 backdrop-blur-sm rounded-xl px-4 text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-emerald-500/60 font-mono transition-all"
               />
             </div>
             <button
               onClick={() => handleScanUrl()}
               disabled={!urlInput.trim() || loading}
-              className="w-full sm:w-auto h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-sm flex-shrink-0 whitespace-nowrap"
+              className="w-full sm:w-auto h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-md shadow-emerald-600/20 flex-shrink-0 whitespace-nowrap"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               <span>Inspect URL</span>
@@ -203,7 +203,7 @@ export const PhishingDetectorPage: React.FC = () => {
 
       {/* Tab 2: Content Analyzer */}
       {activeTab === 'content' && (
-        <div className="w-full max-w-full min-w-0 box-border bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+        <div className="w-full max-w-full min-w-0 box-border glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
           <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
             <label className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 cursor-pointer">
               <input
@@ -233,7 +233,7 @@ export const PhishingDetectorPage: React.FC = () => {
             onChange={(e) => setContentInput(e.target.value)}
             placeholder="Paste suspicious email text, SMS alert, or message content here..."
             disabled={loading}
-            className="w-full min-w-0 max-w-full box-border bg-gray-50 dark:bg-cyber-card border border-gray-200 dark:border-cyber-border rounded-xl p-3 sm:p-4 text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-y"
+            className="w-full min-w-0 max-w-full box-border bg-white/50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-4 text-xs sm:text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-emerald-500/60 resize-y transition-all"
           />
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full min-w-0 pt-1">
@@ -247,7 +247,7 @@ export const PhishingDetectorPage: React.FC = () => {
             <button
               onClick={() => handleScanContent()}
               disabled={!contentInput.trim() || loading}
-              className="w-full sm:w-auto h-11 sm:h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-sm whitespace-nowrap"
+              className="w-full sm:w-auto h-11 sm:h-10 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors shadow-md shadow-emerald-600/20 whitespace-nowrap"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               <span>Inspect Content</span>
@@ -258,7 +258,7 @@ export const PhishingDetectorPage: React.FC = () => {
 
       {/* Error notification */}
       {error && (
-        <div className="w-full max-w-full min-w-0 box-border p-3.5 sm:p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-xs sm:text-sm flex items-center gap-2.5">
+        <div className="w-full max-w-full min-w-0 box-border p-3.5 sm:p-4 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 text-xs sm:text-sm flex items-center gap-2.5">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />
           <span className="min-w-0 break-words">{error}</span>
         </div>
@@ -266,9 +266,9 @@ export const PhishingDetectorPage: React.FC = () => {
 
       {/* Analysis Result Card */}
       {scanResult && (
-        <div className="w-full max-w-full min-w-0 box-border bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-4 sm:p-6 shadow-sm space-y-6 animate-fade-in">
+        <div className="w-full max-w-full min-w-0 box-border glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-6 animate-fade-in">
           {/* Result Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-gray-100 dark:border-cyber-border gap-4 w-full min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-gray-100 dark:border-white/10 gap-4 w-full min-w-0">
             <div className="flex-1 min-w-0">
               <div className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold mb-1">
                 Target Analyzed
@@ -311,7 +311,7 @@ export const PhishingDetectorPage: React.FC = () => {
               {scanResult.threatIndicators.map((ind, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2.5 p-3 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border text-xs text-gray-700 dark:text-gray-300 leading-relaxed min-w-0 break-words"
+                  className="flex items-start gap-2.5 p-3 rounded-xl bg-white/40 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 text-xs text-gray-700 dark:text-gray-300 leading-relaxed min-w-0 break-words"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
                   <span className="min-w-0 break-words flex-1">{ind}</span>
@@ -330,7 +330,7 @@ export const PhishingDetectorPage: React.FC = () => {
               {scanResult.recommendations.map((rec, i) => (
                 <div
                   key={i}
-                  className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/40 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2.5 min-w-0 break-words"
+                  className="p-3 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/20 border border-emerald-500/25 dark:border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2.5 min-w-0 break-words"
                 >
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                   <span className="min-w-0 break-words flex-1">{rec}</span>
@@ -343,7 +343,7 @@ export const PhishingDetectorPage: React.FC = () => {
 
       {/* Tab 3: History */}
       {activeTab === 'history' && (
-        <div className="w-full max-w-full min-w-0 box-border bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+        <div className="w-full max-w-full min-w-0 box-border glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
           <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <History className="w-4 h-4 text-gray-500 flex-shrink-0" />
             <span>Recent Phishing Scans</span>

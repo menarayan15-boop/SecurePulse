@@ -124,11 +124,11 @@ export const LoginMap: React.FC<Props> = ({ logins, onSelectLogin }) => {
   }, [logins, onSelectLogin]);
 
   return (
-    <div className="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-gray-200 dark:border-cyber-border shadow-inner">
+    <div className="relative w-full h-80 sm:h-96 rounded-2xl overflow-hidden border border-gray-200/70 dark:border-white/10 shadow-lg glass-card-static">
       <div ref={mapContainerRef} className="w-full h-full z-10" />
 
       {/* Floating accuracy badge */}
-      <div className="absolute bottom-3 left-3 z-20 px-3 py-1.5 rounded-xl bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md border border-gray-200 dark:border-cyber-border text-xs text-gray-600 dark:text-gray-300 shadow-md flex items-center gap-2">
+      <div className="absolute bottom-3 left-3 z-20 px-3.5 py-1.5 rounded-xl glass-panel border border-gray-200/70 dark:border-white/10 text-xs text-gray-700 dark:text-gray-300 shadow-md flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
         <span>Approximate IP Geolocation (Privacy Protected)</span>
       </div>

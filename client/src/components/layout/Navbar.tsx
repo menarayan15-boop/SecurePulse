@@ -91,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full flex-shrink-0 box-border h-16 bg-white/90 dark:bg-cyber-surface/90 backdrop-blur-md border-b border-gray-200 dark:border-cyber-border transition-colors duration-200">
+    <header className="sticky top-0 z-30 w-full flex-shrink-0 box-border h-16 bg-white/70 dark:bg-[#070b14]/75 backdrop-blur-2xl border-b border-gray-200/70 dark:border-white/10 transition-colors duration-200 shadow-sm dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
       <div className="h-full px-4 sm:px-6 flex items-center justify-between">
         {/* Left: Mobile hamburger & Logo */}
         <div className="flex items-center gap-3">
@@ -120,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
         </div>
 
         {/* Center: Indian Standard Time Ticker (Adaptive Theme Rule indicator) */}
-        <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gray-100/80 dark:bg-cyber-card/80 border border-gray-200 dark:border-cyber-border text-xs text-gray-600 dark:text-gray-300">
+        <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/60 dark:bg-white/[0.04] backdrop-blur-md border border-gray-200/80 dark:border-white/10 text-xs text-gray-600 dark:text-gray-300 shadow-sm">
           <Clock className="w-3.5 h-3.5 text-emerald-500" />
           <span>{istTime}</span>
           <span className="text-gray-300 dark:text-gray-600">•</span>
@@ -149,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
             </button>
 
             {themeDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border shadow-xl p-1.5 text-xs z-50">
+              <div className="absolute right-0 mt-2 w-48 rounded-2xl glass-dropdown shadow-2xl p-1.5 text-xs z-50 animate-fade-in border border-gray-200/80 dark:border-white/10">
                 <div className="px-3 py-2 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                   Adaptive Theme Mode
                 </div>
@@ -160,8 +160,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors ${
                     preference === 'auto'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-semibold'
-                      : 'hover:bg-gray-50 dark:hover:bg-cyber-card text-gray-700 dark:text-gray-300'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/30'
+                      : 'hover:bg-gray-100/70 dark:hover:bg-white/[0.05] text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -177,8 +177,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors ${
                     preference === 'light'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-semibold'
-                      : 'hover:bg-gray-50 dark:hover:bg-cyber-card text-gray-700 dark:text-gray-300'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/30'
+                      : 'hover:bg-gray-100/70 dark:hover:bg-white/[0.05] text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -194,8 +194,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors ${
                     preference === 'dark'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-semibold'
-                      : 'hover:bg-gray-50 dark:hover:bg-cyber-card text-gray-700 dark:text-gray-300'
+                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/30'
+                      : 'hover:bg-gray-100/70 dark:hover:bg-white/[0.05] text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -254,29 +254,29 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 </button>
 
                 {alertsDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border shadow-2xl p-3 z-50 text-xs">
-                    <div className="flex items-center justify-between px-2 pb-2 mb-2 border-b border-gray-100 dark:border-cyber-border">
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl glass-dropdown shadow-2xl p-3.5 z-50 text-xs animate-fade-in border border-gray-200/80 dark:border-white/10">
+                    <div className="flex items-center justify-between px-2 pb-2.5 mb-2 border-b border-gray-200/60 dark:border-white/10">
                       <span className="font-bold text-gray-900 dark:text-gray-100">
                         Security Alerts ({unreadCount} unread)
                       </span>
                       {unreadCount > 0 && (
                         <button
                           onClick={handleMarkAllRead}
-                          className="text-emerald-600 dark:text-emerald-400 hover:underline text-[11px]"
+                          className="text-emerald-600 dark:text-emerald-400 hover:underline text-[11px] font-semibold"
                         >
                           Clear All
                         </button>
                       )}
                     </div>
 
-                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                    <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin">
                       {unreadAlerts.length === 0 ? (
                         <div className="py-6 text-center text-gray-400">No unread security alerts.</div>
                       ) : (
                         unreadAlerts.map((alert) => (
                           <div
                             key={alert._id}
-                            className="p-2.5 rounded-xl bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border"
+                            className="p-3 rounded-xl bg-white/50 dark:bg-white/[0.03] border border-gray-200/60 dark:border-white/10 transition-colors"
                           >
                             <div className="flex items-center justify-between font-semibold text-gray-800 dark:text-gray-200">
                               <span>{alert.title}</span>
@@ -292,11 +292,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                       )}
                     </div>
 
-                    <div className="pt-2 mt-2 border-t border-gray-100 dark:border-cyber-border text-center">
+                    <div className="pt-2.5 mt-2 border-t border-gray-200/60 dark:border-white/10 text-center">
                       <Link
                         to="/alerts"
                         onClick={() => setAlertsDropdownOpen(false)}
-                        className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold text-xs"
+                        className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold text-xs inline-flex items-center gap-1"
                       >
                         View All Security Alerts →
                       </Link>
@@ -318,8 +318,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 </button>
 
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border shadow-2xl p-2 z-50 text-xs">
-                    <div className="px-3 py-2 border-b border-gray-100 dark:border-cyber-border mb-1">
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl glass-dropdown shadow-2xl p-2 z-50 text-xs animate-fade-in border border-gray-200/80 dark:border-white/10">
+                    <div className="px-3 py-2 border-b border-gray-200/60 dark:border-white/10 mb-1">
                       <div className="font-bold text-gray-900 dark:text-gray-100 truncate">{user?.fullName}</div>
                       <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate">@{user?.username}</div>
                     </div>
@@ -327,7 +327,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                     <Link
                       to="/profile"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-cyber-card transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.05] transition-colors"
                     >
                       <User className="w-4 h-4 text-emerald-500" />
                       <span>My Profile</span>
@@ -336,20 +336,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                     <Link
                       to="/security"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-cyber-card transition-colors"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.05] transition-colors"
                     >
                       <Shield className="w-4 h-4 text-emerald-500" />
                       <span>Security Settings</span>
                     </Link>
 
-                    <div className="my-1 border-t border-gray-100 dark:border-cyber-border" />
+                    <div className="my-1 border-t border-gray-200/60 dark:border-white/10" />
 
                     <button
                       onClick={() => {
                         setProfileDropdownOpen(false);
                         logout();
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors font-semibold"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors font-semibold"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Log Out</span>

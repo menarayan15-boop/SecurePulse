@@ -100,7 +100,7 @@ export const SecurityAssistantPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-600/10 via-emerald-500/5 to-transparent border border-emerald-500/20 rounded-2xl p-6">
+      <div className="glass-card-static bg-gradient-to-r from-emerald-600/15 via-emerald-500/10 to-transparent border border-emerald-500/25 rounded-2xl p-6 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -120,7 +120,7 @@ export const SecurityAssistantPage: React.FC = () => {
           </div>
 
           {contextSummary && (
-            <div className="flex items-center gap-3 bg-white dark:bg-cyber-surface px-4 py-2 rounded-xl border border-gray-200 dark:border-cyber-border text-xs">
+            <div className="flex items-center gap-3 glass-panel px-4 py-2 rounded-xl border border-gray-200/70 dark:border-white/10 text-xs shadow-sm">
               <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               <div>
                 <span className="font-semibold text-gray-700 dark:text-gray-300">
@@ -137,9 +137,9 @@ export const SecurityAssistantPage: React.FC = () => {
       </div>
 
       {/* Chat Container */}
-      <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl flex flex-col h-[600px] shadow-sm overflow-hidden">
+      <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl flex flex-col h-[600px] shadow-2xl overflow-hidden">
         {/* Messages Stream */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 scrollbar-thin">
           {messages.map((m) => {
             const isAi = m.role === 'assistant';
             return (
@@ -151,7 +151,7 @@ export const SecurityAssistantPage: React.FC = () => {
                   className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
                     isAi
                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                      : 'bg-blue-600 text-white'
+                      : 'bg-emerald-600 text-white'
                   }`}
                 >
                   {isAi ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
@@ -160,8 +160,8 @@ export const SecurityAssistantPage: React.FC = () => {
                 <div
                   className={`rounded-2xl p-4 text-sm leading-relaxed ${
                     isAi
-                      ? 'bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border text-gray-800 dark:text-gray-200 shadow-sm'
-                      : 'bg-emerald-600 text-white'
+                      ? 'glass-card border border-gray-200/60 dark:border-white/10 text-gray-800 dark:text-gray-200 shadow-md backdrop-blur-md'
+                      : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/20 border border-emerald-400/30'
                   }`}
                 >
                   <div className="whitespace-pre-wrap">{m.content}</div>
@@ -182,7 +182,7 @@ export const SecurityAssistantPage: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 animate-pulse">
                 <Bot className="w-4 h-4" />
               </div>
-              <div className="bg-gray-50 dark:bg-cyber-card border border-gray-100 dark:border-cyber-border rounded-2xl px-4 py-3 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+              <div className="glass-card border border-gray-200/60 dark:border-white/10 rounded-2xl px-4 py-3 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-500" />
                 Analyzing security telemetry and synthesizing response...
               </div>
@@ -193,7 +193,7 @@ export const SecurityAssistantPage: React.FC = () => {
         </div>
 
         {/* Quick Prompts Bar */}
-        <div className="px-4 py-2 border-t border-gray-100 dark:border-cyber-border/60 bg-gray-50/50 dark:bg-cyber-card/30 flex items-center gap-2 overflow-x-auto scrollbar-none">
+        <div className="px-4 py-2 border-t border-gray-200/60 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] backdrop-blur-md flex items-center gap-2 overflow-x-auto scrollbar-none">
           <Lightbulb className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
           <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
             Suggested:
@@ -203,7 +203,7 @@ export const SecurityAssistantPage: React.FC = () => {
               key={idx}
               onClick={() => handleSendMessage(p)}
               disabled={loading}
-              className="px-2.5 py-1 text-xs rounded-lg bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border hover:border-emerald-500 dark:hover:border-emerald-500 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 whitespace-nowrap transition-colors"
+              className="px-2.5 py-1 text-xs rounded-lg glass-panel border border-gray-200/70 dark:border-white/10 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 text-gray-600 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-400 whitespace-nowrap transition-colors"
             >
               {p}
             </button>
@@ -211,7 +211,7 @@ export const SecurityAssistantPage: React.FC = () => {
         </div>
 
         {/* Input Bar */}
-        <div className="p-4 border-t border-gray-200 dark:border-cyber-border bg-white dark:bg-cyber-surface">
+        <div className="p-4 border-t border-gray-200/60 dark:border-white/10 bg-white/40 dark:bg-white/[0.02] backdrop-blur-md">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -225,12 +225,12 @@ export const SecurityAssistantPage: React.FC = () => {
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder="Ask anything about your login activity, alerts, or cybersecurity..."
               disabled={loading}
-              className="flex-1 bg-gray-50 dark:bg-cyber-card border border-gray-200 dark:border-cyber-border rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="flex-1 bg-white/50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 backdrop-blur-sm rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-emerald-500/60 transition-all"
             />
             <button
               type="submit"
               disabled={!inputMessage.trim() || loading}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-sm flex items-center gap-2 transition-colors shadow-sm"
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-sm flex items-center gap-2 transition-colors shadow-md shadow-emerald-600/20"
             >
               <Send className="w-4 h-4" />
               <span className="hidden sm:inline">Ask AI</span>

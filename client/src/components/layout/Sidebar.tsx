@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
 
   return (
     <>
-      <aside className="w-64 h-full bg-white dark:bg-cyber-surface border-r border-gray-200 dark:border-cyber-border flex flex-col justify-between py-6 px-4 transition-colors duration-200 overflow-y-auto scrollbar-thin">
+      <aside className="w-64 h-full bg-white/70 dark:bg-[#070b14]/75 backdrop-blur-2xl border-r border-gray-200/70 dark:border-white/10 flex flex-col justify-between py-6 px-4 transition-colors duration-200 overflow-y-auto scrollbar-thin shadow-sm dark:shadow-[4px_0_24px_rgba(0,0,0,0.35)]">
         <div className="space-y-6">
           {/* Section Label */}
           <div className="px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
@@ -122,8 +122,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
                       isActive
-                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20 dark:shadow-emerald-950/40'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/80 dark:hover:bg-cyber-card'
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-md shadow-emerald-500/10 font-bold backdrop-blur-md'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100/70 dark:hover:bg-white/[0.04]'
                     }`
                   }
                 >
@@ -136,9 +136,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         </div>
 
         {/* Emergency Kill Switch & Status */}
-        <div className="space-y-3 pt-6 border-t border-gray-100 dark:border-cyber-border">
+        <div className="space-y-3 pt-6 border-t border-gray-200/60 dark:border-white/10">
           {lockError && (
-            <div className="text-[11px] p-2 rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400">
+            <div className="text-[11px] p-2.5 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
               {lockError}
             </div>
           )}
@@ -146,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           <button
             onClick={() => setLockModalOpen(true)}
             disabled={isLocking}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 font-semibold text-xs transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 border border-rose-500/25 text-rose-600 dark:text-rose-400 font-semibold text-xs transition-colors shadow-sm"
           >
             <AlertOctagon className="w-4 h-4" />
             <span>Emergency Account Lock</span>

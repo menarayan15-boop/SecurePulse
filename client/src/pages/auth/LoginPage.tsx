@@ -228,9 +228,9 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-cyber-bg dark:via-cyber-surface dark:to-cyber-bg transition-colors duration-200">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-transparent transition-colors duration-200">
       <div className="max-w-md w-full flex flex-col gap-4">
-        <div className="w-full bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div className="w-full glass-modal border border-gray-200/80 dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
         {/* Subtle top accent bar */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600" />
 
@@ -249,7 +249,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Redirect Notice (when user clicked a protected feature) */}
         {redirectParam && !challengeActive && (
-          <div className="mb-6 p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-2.5 leading-relaxed">
+          <div className="mb-6 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-2.5 leading-relaxed backdrop-blur-sm">
             <Info className="w-4 h-4 flex-shrink-0 text-blue-500" />
             <span>Please sign in to access your personal security dashboard.</span>
           </div>
@@ -257,7 +257,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Success Alert */}
         {successMessage && (
-          <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2.5 leading-relaxed">
+          <div className="mb-6 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2.5 leading-relaxed backdrop-blur-sm">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-500" />
             <span>{successMessage}</span>
           </div>
@@ -265,7 +265,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="mb-6 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2.5 leading-relaxed">
+          <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2.5 leading-relaxed backdrop-blur-sm">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-500" />
             <span>{errorMessage}</span>
           </div>
@@ -287,7 +287,7 @@ export const LoginPage: React.FC = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="analyst@securepulse.local"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-cyber-border bg-gray-50/50 dark:bg-cyber-card text-gray-900 dark:text-gray-100 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/[0.04] backdrop-blur-sm text-gray-900 dark:text-gray-100 text-sm focus:border-emerald-500/60 outline-none transition-all"
                 />
                 <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
               </div>
@@ -312,7 +312,7 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-300 dark:border-cyber-border bg-gray-50/50 dark:bg-cyber-card text-gray-900 dark:text-gray-100 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/[0.04] backdrop-blur-sm text-gray-900 dark:text-gray-100 text-sm focus:border-emerald-500/60 outline-none transition-all"
                 />
                 <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
                 <button
@@ -357,7 +357,7 @@ export const LoginPage: React.FC = () => {
                 <div className="w-full border-t border-gray-200 dark:border-cyber-border" />
               </div>
               <div className="relative flex justify-center text-[11px] uppercase">
-                <span className="bg-white dark:bg-cyber-surface px-2.5 text-gray-500 font-medium">Or passwordless</span>
+                <span className="glass-panel px-3 py-1 rounded-full text-gray-500 font-medium text-[11px]">Or passwordless</span>
               </div>
             </div>
 
@@ -365,13 +365,13 @@ export const LoginPage: React.FC = () => {
               type="button"
               onClick={handlePasskeyLogin}
               disabled={isLoading}
-              className="w-full py-2.5 px-4 rounded-xl border border-gray-200 dark:border-cyber-border hover:border-emerald-500/50 bg-gray-50/70 dark:bg-cyber-card/60 hover:bg-emerald-500/5 text-gray-700 dark:text-gray-200 font-semibold text-xs sm:text-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-xl border border-gray-200 dark:border-white/10 hover:border-emerald-500/50 bg-white/40 dark:bg-white/[0.04] backdrop-blur-sm hover:bg-emerald-500/5 text-gray-700 dark:text-gray-200 font-semibold text-xs sm:text-sm transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
             >
               <Fingerprint className="w-4 h-4 text-emerald-500" />
               <span>Sign in with Passkey (Biometrics)</span>
             </button>
 
-            <div className="text-center pt-4 border-t border-gray-100 dark:border-cyber-border">
+            <div className="text-center pt-4 border-t border-gray-100 dark:border-white/10">
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 Do not have an account?{' '}
                 <Link

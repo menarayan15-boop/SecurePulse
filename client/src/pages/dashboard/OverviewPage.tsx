@@ -97,13 +97,13 @@ export const OverviewPage: React.FC = () => {
       {/* ========================================================================= */}
       {/* 1. WELCOME & ADAPTIVE SYSTEM STATUS HERO SECTION                         */}
       {/* ========================================================================= */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-gray-900 via-cyber-surface to-gray-900 text-white p-6 sm:p-8 border border-gray-800 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl glass-card-static bg-gradient-to-r from-[#0d1527]/85 via-[#080d1a]/80 to-[#0d1527]/85 text-white p-6 sm:p-8 border border-gray-200/60 dark:border-white/10 shadow-2xl">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-semibold backdrop-blur-md">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 Adaptive Shield Online
               </span>
@@ -122,7 +122,7 @@ export const OverviewPage: React.FC = () => {
 
           {/* Current Environment Badge */}
           {currentEnvironment && (
-            <div className="flex flex-col gap-1 p-3.5 rounded-2xl bg-white/5 border border-white/10 text-xs backdrop-blur-sm self-start md:self-auto min-w-[220px]">
+            <div className="flex flex-col gap-1 p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 text-xs backdrop-blur-md self-start md:self-auto min-w-[220px] shadow-sm">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                 Current Connected Node
               </span>
@@ -145,7 +145,7 @@ export const OverviewPage: React.FC = () => {
         {/* Card 1: Health Score */}
         <Link
           to="/profile"
-          className="group p-5 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border hover:border-emerald-500/50 shadow-sm transition-all duration-200"
+          className="group p-5 rounded-2xl glass-card border border-gray-200/70 dark:border-white/10 hover:border-emerald-500/50 shadow-lg transition-all duration-200"
         >
           <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-3">
             <span className="text-xs font-semibold">Security Health</span>
@@ -170,7 +170,7 @@ export const OverviewPage: React.FC = () => {
         {/* Card 2: Successful Logins */}
         <Link
           to="/activity"
-          className="group p-5 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border hover:border-emerald-500/50 shadow-sm transition-all duration-200"
+          className="group p-5 rounded-2xl glass-card border border-gray-200/70 dark:border-white/10 hover:border-emerald-500/50 shadow-lg transition-all duration-200"
         >
           <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-3">
             <span className="text-xs font-semibold">Successful Logins</span>
@@ -188,7 +188,7 @@ export const OverviewPage: React.FC = () => {
         {/* Card 3: Active Sessions */}
         <Link
           to="/sessions"
-          className="group p-5 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border hover:border-emerald-500/50 shadow-sm transition-all duration-200"
+          className="group p-5 rounded-2xl glass-card border border-gray-200/70 dark:border-white/10 hover:border-emerald-500/50 shadow-lg transition-all duration-200"
         >
           <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-3">
             <span className="text-xs font-semibold">Active Sessions</span>
@@ -206,7 +206,7 @@ export const OverviewPage: React.FC = () => {
         {/* Card 4: Trusted Devices */}
         <Link
           to="/devices"
-          className="group p-5 rounded-2xl bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border hover:border-emerald-500/50 shadow-sm transition-all duration-200"
+          className="group p-5 rounded-2xl glass-card border border-gray-200/70 dark:border-white/10 hover:border-emerald-500/50 shadow-lg transition-all duration-200"
         >
           <div className="flex items-center justify-between text-gray-500 dark:text-gray-400 mb-3">
             <span className="text-xs font-semibold">Trusted Devices</span>
@@ -229,7 +229,7 @@ export const OverviewPage: React.FC = () => {
         {/* Feature 1 Card: AI Login Risk Analysis */}
         <Link
           to="/risk-analysis"
-          className="group p-5 rounded-3xl bg-gradient-to-br from-white via-white to-emerald-50/30 dark:from-cyber-surface dark:via-cyber-surface dark:to-emerald-950/20 border border-gray-200 dark:border-cyber-border hover:border-emerald-500/50 shadow-sm transition-all flex flex-col justify-between"
+          className="group p-5 sm:p-6 rounded-3xl glass-card border border-gray-200/70 dark:border-white/10 hover:border-emerald-500/50 shadow-lg transition-all flex flex-col justify-between"
         >
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -251,7 +251,7 @@ export const OverviewPage: React.FC = () => {
               Multi-signal behavioral risk score. Evaluates travel velocity, browser, and network signatures.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-cyber-border flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+          <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-white/10 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform">
             <span>Explore Risk Factors Breakdown</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
@@ -260,7 +260,7 @@ export const OverviewPage: React.FC = () => {
         {/* Feature 2 Card: Impossible Travel Alerts */}
         <Link
           to="/impossible-travel"
-          className="group p-5 rounded-3xl bg-gradient-to-br from-white via-white to-rose-50/20 dark:from-cyber-surface dark:via-cyber-surface dark:to-rose-950/20 border border-gray-200 dark:border-cyber-border hover:border-rose-500/50 shadow-sm transition-all flex flex-col justify-between"
+          className="group p-5 sm:p-6 rounded-3xl glass-card border border-gray-200/70 dark:border-white/10 hover:border-rose-500/50 shadow-lg transition-all flex flex-col justify-between"
         >
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -279,7 +279,7 @@ export const OverviewPage: React.FC = () => {
               Location-based velocity monitor detects authentication requests exceeding physical airline travel limits.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-cyber-border flex items-center justify-between text-xs font-semibold text-rose-600 dark:text-rose-400 group-hover:translate-x-0.5 transition-transform">
+          <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-white/10 flex items-center justify-between text-xs font-semibold text-rose-600 dark:text-rose-400 group-hover:translate-x-0.5 transition-transform">
             <span>View Flight Vectors & Map</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
@@ -288,7 +288,7 @@ export const OverviewPage: React.FC = () => {
         {/* Feature 5 Card: Account Takeover Protection */}
         <Link
           to="/account-protection"
-          className="group p-5 rounded-3xl bg-gradient-to-br from-white via-white to-blue-50/20 dark:from-cyber-surface dark:via-cyber-surface dark:to-blue-950/20 border border-gray-200 dark:border-cyber-border hover:border-blue-500/50 shadow-sm transition-all flex flex-col justify-between"
+          className="group p-5 sm:p-6 rounded-3xl glass-card border border-gray-200/70 dark:border-white/10 hover:border-blue-500/50 shadow-lg transition-all flex flex-col justify-between"
         >
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -307,7 +307,7 @@ export const OverviewPage: React.FC = () => {
               Monitors sensitive modifications, passkey status, and provides one-click emergency session revoking.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-cyber-border flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+          <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-white/10 flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
             <span>Open Protection Center</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
@@ -357,17 +357,17 @@ export const OverviewPage: React.FC = () => {
             </Link>
           </div>
 
-          <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl overflow-hidden shadow-sm">
+          <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl overflow-hidden shadow-lg">
             {recentLogins.length === 0 ? (
               <div className="py-10 text-center text-xs text-gray-400">
                 No recent logins recorded.
               </div>
             ) : (
-              <div className="divide-y divide-gray-100 dark:divide-cyber-border">
+              <div className="divide-y divide-gray-100 dark:divide-white/5">
                 {recentLogins.map((item) => (
                   <div
                     key={item._id}
-                    className="p-4 flex items-center justify-between gap-4 hover:bg-gray-50/50 dark:hover:bg-cyber-card/50 transition-colors"
+                    className="p-4 flex items-center justify-between gap-4 hover:bg-white/[0.04] transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <SecurityBadge type="device" value={item.deviceType} />
@@ -408,10 +408,10 @@ export const OverviewPage: React.FC = () => {
             <h2 className="text-base font-bold text-gray-900 dark:text-gray-100">
               Quick Security Controls
             </h2>
-            <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-3 space-y-1 shadow-sm">
+            <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-3.5 space-y-1 shadow-lg">
               <Link
                 to="/devices"
-                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-cyber-card transition-colors"
+                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.05] transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <Laptop className="w-4 h-4 text-emerald-500" />
@@ -422,7 +422,7 @@ export const OverviewPage: React.FC = () => {
 
               <Link
                 to="/sessions"
-                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-cyber-card transition-colors"
+                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.05] transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <Radio className="w-4 h-4 text-blue-500" />
@@ -433,7 +433,7 @@ export const OverviewPage: React.FC = () => {
 
               <Link
                 to="/settings"
-                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-cyber-card transition-colors"
+                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.05] transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <Sliders className="w-4 h-4 text-purple-500" />
@@ -444,7 +444,7 @@ export const OverviewPage: React.FC = () => {
 
               <Link
                 to="/profile"
-                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-cyber-card transition-colors"
+                className="flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-white/[0.05] transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <UserCheck className="w-4 h-4 text-teal-500" />
@@ -469,7 +469,7 @@ export const OverviewPage: React.FC = () => {
               </Link>
             </div>
 
-            <div className="bg-white dark:bg-cyber-surface border border-gray-200 dark:border-cyber-border rounded-2xl p-4 shadow-sm space-y-3">
+            <div className="glass-card-static border border-gray-200/70 dark:border-white/10 rounded-2xl p-4 shadow-lg space-y-3">
               {recentAlerts.length === 0 ? (
                 <div className="py-4 text-center text-xs text-gray-400">
                   No security alerts. Account safe.

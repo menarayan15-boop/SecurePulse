@@ -7,11 +7,176 @@
     border-color: theme('colors.gray.200');
   }
   .dark * {
-    border-color: theme('colors.cyber.border');
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    background-color: #070b14;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 85% 15%, rgba(59, 130, 246, 0.07) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 60% at 50% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 90% 80%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
+    color: #0f172a;
+  }
+
+  .dark body,
+  body.dark {
+    background-color: #070b14;
+    color: #f1f5f9;
+  }
+
+  /* Light mode ambient background */
+  :not(.dark) body {
+    background-color: #f8fafc;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 85% 15%, rgba(59, 130, 246, 0.04) 0%, transparent 55%);
+    color: #0f172a;
+  }
+}
+
+/* ========================================================================= */
+/* PREMIUM GLASSMORPHISM SYSTEM                                              */
+/* ========================================================================= */
+
+.glass-panel {
+  background: rgba(13, 20, 36, 0.65);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.28);
+}
+html:not(.dark) .glass-panel {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.06);
+}
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.60);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+html:not(.dark) .glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.05);
+}
+
+.glass-card:hover {
+  border-color: rgba(16, 185, 129, 0.32);
+  box-shadow: 0 14px 40px 0 rgba(0, 0, 0, 0.38), 0 0 24px 0 rgba(16, 185, 129, 0.08);
+  transform: translateY(-2px);
+}
+html:not(.dark) .glass-card:hover {
+  border-color: rgba(16, 185, 129, 0.40);
+  box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.08);
+}
+
+.glass-card-static {
+  background: rgba(15, 23, 42, 0.60);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+}
+html:not(.dark) .glass-card-static {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.05);
+}
+
+.glass-input {
+  background: rgba(10, 16, 30, 0.60);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  color: inherit;
+  transition: all 0.2s ease-in-out;
+}
+html:not(.dark) .glass-input {
+  background: rgba(248, 250, 252, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.glass-input:focus {
+  background: rgba(10, 16, 30, 0.85);
+  border-color: rgba(16, 185, 129, 0.65);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), 0 0 16px rgba(16, 185, 129, 0.1);
+  outline: none;
+}
+html:not(.dark) .glass-input:focus {
+  background: #ffffff;
+  border-color: rgba(16, 185, 129, 0.65);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.glass-dropdown {
+  background: rgba(11, 18, 33, 0.90);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 20px rgba(0, 0, 0, 0.3);
+}
+html:not(.dark) .glass-dropdown {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.glass-modal {
+  background: rgba(11, 18, 35, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.5rem;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.60), 0 0 32px rgba(16, 185, 129, 0.08);
+}
+html:not(.dark) .glass-modal {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Automatic backdrop blur & frosted effect on existing Tailwind surfaces */
+.dark .bg-cyber-surface {
+  background-color: rgba(15, 23, 42, 0.68) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+.dark .bg-cyber-card {
+  background-color: rgba(22, 31, 51, 0.55) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Graceful fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-panel,
+  .glass-card,
+  .glass-card-static,
+  .glass-dropdown,
+  .glass-modal,
+  .dark .bg-cyber-surface,
+  .dark .bg-cyber-card {
+    background: #0f172a !important;
   }
 }
 
@@ -39,20 +204,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
+  background: rgba(156, 163, 175, 0.3);
   border-radius: 9999px;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(55, 65, 81, 0.6);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.7);
+  background: rgba(156, 163, 175, 0.5);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.9);
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* Animations */
@@ -84,3 +249,14 @@
   animation: slideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Accessibility: Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
