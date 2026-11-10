@@ -171,8 +171,8 @@ export const LoginPage: React.FC = () => {
         );
       } else if (err.status === 401) {
         setErrorMessage('Invalid email or password.');
-      } else if (err.status === 503) {
-        setErrorMessage(err.data?.message || err.message || "Service temporarily unavailable. Please try again shortly.");
+      } else if (err.status === 503 || err.data?.category === 'DATABASE_ERROR') {
+        setErrorMessage(err.data?.message || err.message || "Authentication service is temporarily unavailable. Please try again in a few moments.");
       } else {
         setErrorMessage(err.data?.message || err.message || 'An error occurred during login. Please try again.');
       }

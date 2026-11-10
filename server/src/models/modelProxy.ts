@@ -65,49 +65,43 @@ export function createModelProxy<T extends Record<string, any>>(
             data._id = new mongoose.Types.ObjectId().toString();
           }
 
-          // Always mirror into fallbackCollection to keep persistence synchronized
-          let fallbackDoc: any = null;
-          try {
-            fallbackDoc = await fallbackCollection.create(data);
-          } catch {}
-
+          // If Mongoose is connected to a primary MongoDB instance
           if (mongoose.connection.readyState === 1) {
             try {
-              return await target.create(data);
+              const res = await target.create(data);
+              // Asynchronously mirror into fallback store
+              fallbackCollection.create(data).catch(() => {});
+              return res;
             } catch (mongoErr) {
-              if (fallbackDoc) return fallbackDoc;
-              throw mongoErr;
+              // If MongoDB fails, attempt durable fallback
+              return fallbackCollection.create(data);
             }
           }
-          return fallbackDoc;
+
+          // Authoritative write via fallback / Neon store (propagates errors on failure)
+          return fallbackCollection.create(data);
         };
       }
 
       // WRITE: updateOne
       if (prop === 'updateOne') {
         return async function (filter: any, update: any, options?: any) {
-          try {
-            await fallbackCollection.updateOne(filter, update);
-          } catch {}
-
           if (mongoose.connection.readyState === 1) {
+            fallbackCollection.updateOne(filter, update).catch(() => {});
             return target.updateOne(filter, update, options);
           }
-          return { modifiedCount: 1 };
+          return fallbackCollection.updateOne(filter, update);
         };
       }
 
       // WRITE: updateMany
       if (prop === 'updateMany') {
         return async function (filter: any, update: any, options?: any) {
-          try {
-            await fallbackCollection.updateMany(filter, update);
-          } catch {}
-
           if (mongoose.connection.readyState === 1) {
+            fallbackCollection.updateMany(filter, update).catch(() => {});
             return target.updateMany(filter, update, options);
           }
-          return { modifiedCount: 1 };
+          return fallbackCollection.updateMany(filter, update);
         };
       }
 

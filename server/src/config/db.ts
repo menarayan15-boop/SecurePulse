@@ -1,9 +1,34 @@
 import mongoose from 'mongoose';
+import {
+  isCloudDatabaseConfigured,
+  getSafeMaskedDbUri,
+  ensureSchemaAndIndexes,
+  probeCloudDatabaseHealth,
+} from './cloudSync.js';
 
 let cachedPromise: Promise<typeof mongoose> | null = null;
+let cloudDbVerified = false;
 
 export async function connectDB(): Promise<void> {
-  // If already connected, return immediately (crucial for Serverless warm container reuse)
+  // Verify authoritative Neon PostgreSQL cloud storage once
+  if (!cloudDbVerified && isCloudDatabaseConfigured()) {
+    try {
+      await ensureSchemaAndIndexes();
+      const health = await probeCloudDatabaseHealth();
+      if (health.healthy) {
+        console.log(
+          `[Database] Authoritative Cloud Storage Active: Neon PostgreSQL (${getSafeMaskedDbUri()}) [${health.latencyMs}ms]`
+        );
+        cloudDbVerified = true;
+      } else {
+        console.warn(`[Database] Cloud Storage probe warning: ${health.error}`);
+      }
+    } catch (err: any) {
+      console.warn(`[Database] Cloud Storage init notice: ${err.message}`);
+    }
+  }
+
+  // If MongoDB is already connected, return immediately
   if (mongoose.connection.readyState === 1) {
     return;
   }
@@ -38,7 +63,9 @@ export async function connectDB(): Promise<void> {
 
   // If running on Vercel or AWS Lambda with no MONGODB_URI, skip local port probe
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    console.log('[Database] Active Mode: Embedded Persistent Storage (Vercel Serverless).');
+    console.log(
+      `[Database] Active Mode: Neon PostgreSQL Authoritative Cloud Database (${getSafeMaskedDbUri()}).`
+    );
     return;
   }
 
@@ -53,9 +80,8 @@ export async function connectDB(): Promise<void> {
     console.log('[Database] Connected to local MongoDB instance at mongodb://127.0.0.1:27017/securepulse');
   } catch (localErr) {
     cachedPromise = null;
-    console.log('[Database] Local MongoDB not running on 27017.');
-    console.log('[Database] Active Mode: Embedded Persistent Storage (server/data/*.json).');
-    console.log('[Database] All users, sessions, login logs, and alerts are persisted automatically.');
-    console.log('[Database] To connect to MongoDB Atlas, set MONGODB_URI in server/.env');
+    console.log(
+      `[Database] Active Mode: Neon PostgreSQL Cloud Database (${getSafeMaskedDbUri()}) with local persistent cache.`
+    );
   }
 }

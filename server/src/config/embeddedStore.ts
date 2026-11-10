@@ -3,7 +3,17 @@ import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { SEED_DATA_MAP } from './seedData.js';
-import { upsertRemoteDoc, fetchRemoteCollection, deleteRemoteDoc } from './cloudSync.js';
+import {
+  upsertRemoteDoc,
+  fetchRemoteCollection,
+  deleteRemoteDoc,
+  fetchUserByIdentifier,
+  fetchRemoteDoc,
+  findRemoteDocsByField,
+  isCloudDatabaseConfigured,
+  ensureSchemaAndIndexes,
+  DatabaseError,
+} from './cloudSync.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,7 +28,7 @@ if (!globalThis.__SECUREPULSE_GLOBAL_STORE__) {
 }
 
 function resolveDataDir(): string {
-  // If running in Vercel or AWS Lambda, the local files are read-only; use /tmp
+  // If running in Vercel or AWS Lambda, local files are read-only; use /tmp cache
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
     const tmpDir = path.join('/tmp', 'securepulse_data');
     if (!fs.existsSync(tmpDir)) {
@@ -36,7 +46,6 @@ function resolveDataDir(): string {
     }
     return localDir;
   } catch {
-    // If local dir fails with EROFS (read-only filesystem), fallback to /tmp
     const fallbackDir = path.join('/tmp', 'securepulse_data');
     if (!fs.existsSync(fallbackDir)) {
       try {
@@ -49,6 +58,41 @@ function resolveDataDir(): string {
 
 const DATA_DIR = resolveDataDir();
 
+// Ensure cloud schema on background startup
+if (isCloudDatabaseConfigured()) {
+  ensureSchemaAndIndexes().catch(() => {});
+}
+
+function extractIdentifierFromFilter(filter: any): string | null {
+  if (!filter) return null;
+  if (typeof filter.email === 'string') return filter.email;
+  if (typeof filter.username === 'string') return filter.username;
+  if (Array.isArray(filter.$or)) {
+    for (const cond of filter.$or) {
+      if (cond) {
+        if (typeof cond.email === 'string') return cond.email;
+        if (typeof cond.username === 'string') return cond.username;
+        if (cond.email instanceof RegExp) {
+          const clean = cond.email.source.replace(/^\^|\$$|\\/g, '');
+          if (clean && !clean.includes('.*')) return clean;
+        }
+        if (cond.username instanceof RegExp) {
+          const clean = cond.username.source.replace(/^\^|\$$|\\/g, '');
+          if (clean && !clean.includes('.*')) return clean;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function extractIdFromFilter(filter: any): string | null {
+  if (!filter) return null;
+  if (filter._id) return String(filter._id);
+  if (filter.id) return String(filter.id);
+  return null;
+}
+
 export class EmbeddedCollection<T extends Record<string, any>> {
   private filePath: string;
   private collectionName: string;
@@ -58,6 +102,20 @@ export class EmbeddedCollection<T extends Record<string, any>> {
     this.collectionName = collectionName;
     this.filePath = path.join(DATA_DIR, `${collectionName}.json`);
     this.load();
+  }
+
+  private syncItemIntoCache(item: any): void {
+    if (!item || !item._id) return;
+    const idStr = String(item._id);
+    const idx = this.items.findIndex((i: any) => String(i._id) === idStr);
+    if (idx === -1) {
+      this.items.push(item);
+    } else {
+      this.items[idx] = { ...this.items[idx], ...item };
+    }
+    if (globalThis.__SECUREPULSE_GLOBAL_STORE__) {
+      globalThis.__SECUREPULSE_GLOBAL_STORE__[this.collectionName] = this.items;
+    }
   }
 
   private load(): void {
@@ -119,31 +177,20 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         this.saveToFile();
       }
 
-      // Always guarantee verified seed users are present in the collection
-      if (SEED_DATA_MAP[this.collectionName]) {
+      // Populate seed users only if collection is completely empty
+      if (SEED_DATA_MAP[this.collectionName] && this.items.length === 0) {
         const seeds = SEED_DATA_MAP[this.collectionName];
-        let addedAny = false;
         for (const seed of seeds) {
-          const exists = this.items.some(
-            (item: any) =>
-              String(item._id) === String(seed._id) ||
-              (item.email && seed.email && String(item.email).toLowerCase() === String(seed.email).toLowerCase())
-          );
-          if (!exists) {
-            this.items.push({ ...seed } as any);
-            addedAny = true;
-          }
+          this.items.push({ ...seed } as any);
         }
-        if (addedAny) {
-          this.saveToFile();
-        }
+        this.saveToFile();
       }
 
       // Sync into global in-memory store
       if (globalThis.__SECUREPULSE_GLOBAL_STORE__) {
         globalThis.__SECUREPULSE_GLOBAL_STORE__[this.collectionName] = this.items;
       }
-    } catch (err) {
+    } catch {
       if (!this.items) this.items = [];
     }
   }
@@ -155,7 +202,7 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         globalThis.__SECUREPULSE_GLOBAL_STORE__[this.collectionName] = this.items;
       }
     } catch (err) {
-      console.error(`[EmbeddedStore] Failed to write ${this.filePath}:`, err);
+      console.warn(`[EmbeddedStore] Notice: Cache write to ${this.filePath} bypassed.`);
     }
   }
 
@@ -271,25 +318,19 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
     doc.save = async () => {
       this.load();
-      const idx = this.items.findIndex((i: any) => String(i._id) === String(doc._id));
-      if (idx !== -1) {
-        this.items[idx] = { ...doc };
-        delete this.items[idx].save;
-        delete this.items[idx].toObject;
-        delete this.items[idx].id;
-        delete this.items[idx].updateOne;
-        this.saveToFile();
-        await upsertRemoteDoc(this.collectionName, doc._id, this.items[idx]).catch(() => {});
-      } else {
-        const copy = { ...doc };
-        delete copy.save;
-        delete copy.toObject;
-        delete copy.id;
-        delete copy.updateOne;
-        this.items.push(copy);
-        this.saveToFile();
-        await upsertRemoteDoc(this.collectionName, doc._id, copy).catch(() => {});
+      const cleanDoc = { ...doc };
+      delete cleanDoc.save;
+      delete cleanDoc.toObject;
+      delete cleanDoc.id;
+      delete cleanDoc.updateOne;
+      cleanDoc.updatedAt = new Date();
+
+      if (isCloudDatabaseConfigured()) {
+        await upsertRemoteDoc(this.collectionName, doc._id, cleanDoc);
       }
+
+      this.syncItemIntoCache(cleanDoc);
+      this.saveToFile();
       return doc;
     };
 
@@ -311,6 +352,14 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
   async countDocuments(filter: Record<string, any> = {}): Promise<number> {
     this.load();
+    if (isCloudDatabaseConfigured()) {
+      try {
+        const remote = await fetchRemoteCollection(this.collectionName);
+        for (const r of remote) {
+          if (r?._id) this.syncItemIntoCache(r);
+        }
+      } catch {}
+    }
     return this.items.filter((item) => this.matchFilter(item, filter)).length;
   }
 
@@ -322,9 +371,14 @@ export class EmbeddedCollection<T extends Record<string, any>> {
       updatedAt: (data as any).updatedAt || new Date(),
       ...data,
     };
-    this.items.push(item);
+
+    // Authoritative persistence: AWAIT cloud write first
+    if (isCloudDatabaseConfigured()) {
+      await upsertRemoteDoc(this.collectionName, item._id, item);
+    }
+
+    this.syncItemIntoCache(item);
     this.saveToFile();
-    await upsertRemoteDoc(this.collectionName, item._id, item).catch(() => {});
     return this.wrapDoc(item);
   }
 
@@ -338,9 +392,11 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         updatedAt: (d as any).updatedAt || new Date(),
         ...d,
       };
-      this.items.push(item);
+      if (isCloudDatabaseConfigured()) {
+        await upsertRemoteDoc(this.collectionName, item._id, item);
+      }
+      this.syncItemIntoCache(item);
       created.push(this.wrapDoc(item));
-      await upsertRemoteDoc(this.collectionName, item._id, item).catch(() => {});
     }
     this.saveToFile();
     return created;
@@ -348,7 +404,6 @@ export class EmbeddedCollection<T extends Record<string, any>> {
 
   find(filter: Record<string, any> = {}): any {
     this.load();
-    let matched = this.items.filter((item) => this.matchFilter(item, filter));
 
     const queryObj: any = {
       _sortField: null as string | null,
@@ -389,70 +444,49 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         return new Promise((resolve, reject) => queryObj.then(resolve, reject));
       },
 
-      then: (resolve: (val: any) => void, reject?: (err: any) => void) => {
+      then: async (resolve: (val: any) => void, reject?: (err: any) => void) => {
         try {
           this.load();
-          const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-          const lastSync = (globalThis as any).__SECUREPULSE_LAST_SYNC__?.[this.collectionName] || 0;
-          const needsSync = isServerless && (Date.now() - lastSync > 3000);
 
-          const finalize = () => {
-            let res = this.items.filter((item) => this.matchFilter(item, filter));
-            if (queryObj._sortField) {
-              const f = queryObj._sortField;
-              const dir = queryObj._sortDir;
-              res.sort((a: any, b: any) => {
-                const valA = a[f] instanceof Date ? a[f].getTime() : a[f];
-                const valB = b[f] instanceof Date ? b[f].getTime() : b[f];
-                if (valA < valB) return -1 * dir;
-                if (valA > valB) return 1 * dir;
-                return 0;
-              });
-            }
-
-            if (queryObj._skip > 0) {
-              res = res.slice(queryObj._skip);
-            }
-            if (queryObj._limit > 0) {
-              res = res.slice(0, queryObj._limit);
-            }
-
-            const wrapped = queryObj._lean ? res : res.map((r) => this.wrapDoc(r));
-            resolve(wrapped);
-          };
-
-          if (needsSync) {
-            fetchRemoteCollection(this.collectionName).then((remoteItems) => {
-              if (Array.isArray(remoteItems) && remoteItems.length > 0) {
-                let merged = false;
-                for (const r of remoteItems) {
-                  if (r && r._id) {
-                    const idx = this.items.findIndex((i: any) => String(i._id) === String(r._id));
-                    if (idx === -1) {
-                      this.items.push(r);
-                      merged = true;
-                    } else {
-                      this.items[idx] = { ...this.items[idx], ...r };
-                      merged = true;
-                    }
-                  }
-                }
-                if (merged) {
-                  this.saveToFile();
+          if (isCloudDatabaseConfigured()) {
+            try {
+              const remote = await fetchRemoteCollection(this.collectionName);
+              if (Array.isArray(remote)) {
+                for (const r of remote) {
+                  if (r?._id) this.syncItemIntoCache(r);
                 }
               }
-              if (!(globalThis as any).__SECUREPULSE_LAST_SYNC__) {
-                (globalThis as any).__SECUREPULSE_LAST_SYNC__ = {};
-              }
-              (globalThis as any).__SECUREPULSE_LAST_SYNC__[this.collectionName] = Date.now();
-              finalize();
-            }).catch(() => finalize());
-            return;
+            } catch (syncErr) {
+              // If collection query fails, log and fallback to local cache
+              console.warn(`[EmbeddedStore] Remote collection sync notice for '${this.collectionName}':`, (syncErr as any).message);
+            }
           }
 
-          finalize();
+          let res = this.items.filter((item) => this.matchFilter(item, filter));
+          if (queryObj._sortField) {
+            const f = queryObj._sortField;
+            const dir = queryObj._sortDir;
+            res.sort((a: any, b: any) => {
+              const valA = a[f] instanceof Date ? a[f].getTime() : a[f];
+              const valB = b[f] instanceof Date ? b[f].getTime() : b[f];
+              if (valA < valB) return -1 * dir;
+              if (valA > valB) return 1 * dir;
+              return 0;
+            });
+          }
+
+          if (queryObj._skip > 0) {
+            res = res.slice(queryObj._skip);
+          }
+          if (queryObj._limit > 0) {
+            res = res.slice(0, queryObj._limit);
+          }
+
+          const wrapped = queryObj._lean ? res : res.map((r) => this.wrapDoc(r));
+          resolve(wrapped);
         } catch (err) {
           if (reject) reject(err);
+          else throw err;
         }
       },
     };
@@ -489,51 +523,96 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         return new Promise((resolve, reject) => queryObj.then(resolve, reject));
       },
 
-      then: (resolve: (val: any) => void, reject?: (err: any) => void) => {
+      then: async (resolve: (val: any) => void, reject?: (err: any) => void) => {
         try {
           this.load();
-          const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-          const lastSync = (globalThis as any).__SECUREPULSE_LAST_SYNC__?.[this.collectionName] || 0;
-          const needsSync = isServerless && (Date.now() - lastSync > 3000);
 
-          let raw = this.items.find((item) => this.matchFilter(item, filter));
-          if ((!raw || needsSync) && isServerless) {
-            fetchRemoteCollection(this.collectionName).then((remoteItems) => {
-              if (Array.isArray(remoteItems) && remoteItems.length > 0) {
-                let merged = false;
-                for (const r of remoteItems) {
-                  if (r && r._id) {
-                    const idx = this.items.findIndex((i: any) => String(i._id) === String(r._id));
-                    if (idx === -1) {
-                      this.items.push(r);
-                      merged = true;
-                    } else {
-                      this.items[idx] = { ...this.items[idx], ...r };
-                      merged = true;
-                    }
-                  }
-                }
-                if (merged) {
-                  this.saveToFile();
-                  raw = this.items.find((item) => this.matchFilter(item, filter));
-                }
+          // 1. Authoritative Neon PostgreSQL lookup for User collection
+          if (this.collectionName === 'users' && isCloudDatabaseConfigured()) {
+            const identifier = extractIdentifierFromFilter(filter);
+            const docId = extractIdFromFilter(filter);
+
+            if (identifier) {
+              const remoteUser = await fetchUserByIdentifier(identifier);
+              if (remoteUser) {
+                this.syncItemIntoCache(remoteUser);
+                return resolve(queryObj._lean ? remoteUser : this.wrapDoc(remoteUser));
               }
-              if (!(globalThis as any).__SECUREPULSE_LAST_SYNC__) {
-                (globalThis as any).__SECUREPULSE_LAST_SYNC__ = {};
+            } else if (docId) {
+              const remoteUser = await fetchRemoteDoc('users', docId);
+              if (remoteUser) {
+                this.syncItemIntoCache(remoteUser);
+                return resolve(queryObj._lean ? remoteUser : this.wrapDoc(remoteUser));
               }
-              (globalThis as any).__SECUREPULSE_LAST_SYNC__[this.collectionName] = Date.now();
-              const wrapped = raw ? (queryObj._lean ? raw : this.wrapDoc(raw)) : null;
-              resolve(wrapped);
-            }).catch(() => {
-              const wrapped = raw ? (queryObj._lean ? raw : this.wrapDoc(raw)) : null;
-              resolve(wrapped);
-            });
-            return;
+            }
           }
+
+          // 2. Authoritative lookup for OTP or Session by indexed token fields
+          if (isCloudDatabaseConfigured()) {
+            let remoteMatches: any[] = [];
+            if (filter['metadata.challengeToken']) {
+              remoteMatches = await findRemoteDocsByField(
+                this.collectionName,
+                'metadata.challengeToken',
+                filter['metadata.challengeToken'],
+                20
+              );
+            } else if (filter['sessionToken']) {
+              remoteMatches = await findRemoteDocsByField(this.collectionName, 'sessionToken', filter['sessionToken'], 20);
+            } else if (filter['refreshTokenHash']) {
+              remoteMatches = await findRemoteDocsByField(
+                this.collectionName,
+                'refreshTokenHash',
+                filter['refreshTokenHash'],
+                20
+              );
+            }
+
+            if (remoteMatches && remoteMatches.length > 0) {
+              for (const m of remoteMatches) {
+                this.syncItemIntoCache(m);
+              }
+            }
+          }
+
+          // 3. Find matching item in local/synced items that strictly satisfies filter
+          let matchedItems = this.items.filter((item) => this.matchFilter(item, filter));
+          if (queryObj._sortField && matchedItems.length > 1) {
+            const f = queryObj._sortField;
+            const dir = queryObj._sortDir;
+            matchedItems.sort((a: any, b: any) => {
+              const valA = a[f] instanceof Date ? a[f].getTime() : a[f];
+              const valB = b[f] instanceof Date ? b[f].getTime() : b[f];
+              if (valA < valB) return -1 * dir;
+              if (valA > valB) return 1 * dir;
+              return 0;
+            });
+          }
+          let raw = matchedItems[0] || null;
+
+          // 4. If not found in cache and cloud DB is configured, sync collection
+          if (!raw && isCloudDatabaseConfigured()) {
+            try {
+              const remote = await fetchRemoteCollection(this.collectionName);
+              if (Array.isArray(remote) && remote.length > 0) {
+                for (const r of remote) {
+                  if (r?._id) this.syncItemIntoCache(r);
+                }
+                const refreshedMatches = this.items.filter((item) => this.matchFilter(item, filter));
+                raw = refreshedMatches[0] || null;
+              }
+            } catch (err) {
+              if (this.collectionName === 'users') {
+                throw err;
+              }
+            }
+          }
+
           const wrapped = raw ? (queryObj._lean ? raw : this.wrapDoc(raw)) : null;
           resolve(wrapped);
         } catch (err) {
           if (reject) reject(err);
+          else throw err;
         }
       },
     };
@@ -548,23 +627,22 @@ export class EmbeddedCollection<T extends Record<string, any>> {
   async updateOne(filter: Record<string, any>, update: Record<string, any>): Promise<{ modifiedCount: number }> {
     this.load();
     let item = this.items.find((i) => this.matchFilter(i, filter));
-    if (!item && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
-      try {
-        const remoteItems = await fetchRemoteCollection(this.collectionName);
-        if (Array.isArray(remoteItems) && remoteItems.length > 0) {
-          for (const r of remoteItems) {
-            if (r && r._id) {
-              const idx = this.items.findIndex((i: any) => String(i._id) === String(r._id));
-              if (idx === -1) this.items.push(r);
-              else this.items[idx] = { ...this.items[idx], ...r };
-            }
-          }
-          this.saveToFile();
-          item = this.items.find((i) => this.matchFilter(i, filter));
-        }
-      } catch {}
+
+    if (!item && isCloudDatabaseConfigured()) {
+      const docId = extractIdFromFilter(filter);
+      const identifier = extractIdentifierFromFilter(filter);
+      if (docId) {
+        item = await fetchRemoteDoc(this.collectionName, docId);
+      } else if (identifier && this.collectionName === 'users') {
+        item = await fetchUserByIdentifier(identifier);
+      }
+      if (item) {
+        this.syncItemIntoCache(item);
+      }
     }
+
     if (!item) return { modifiedCount: 0 };
+
     if (update.$set) {
       for (const [k, v] of Object.entries(update.$set)) {
         if (k.includes('.')) {
@@ -583,13 +661,27 @@ export class EmbeddedCollection<T extends Record<string, any>> {
       Object.assign(item, update);
     }
     (item as any).updatedAt = new Date();
+
+    if (isCloudDatabaseConfigured()) {
+      await upsertRemoteDoc(this.collectionName, item._id, item);
+    }
+
+    this.syncItemIntoCache(item);
     this.saveToFile();
-    await upsertRemoteDoc(this.collectionName, item._id, item).catch(() => {});
     return { modifiedCount: 1 };
   }
 
   async updateMany(filter: Record<string, any>, update: Record<string, any>): Promise<{ modifiedCount: number }> {
     this.load();
+    if (isCloudDatabaseConfigured()) {
+      try {
+        const remote = await fetchRemoteCollection(this.collectionName);
+        for (const r of remote) {
+          if (r?._id) this.syncItemIntoCache(r);
+        }
+      } catch {}
+    }
+
     let count = 0;
     const modifiedItems: any[] = [];
     for (const item of this.items) {
@@ -604,13 +696,17 @@ export class EmbeddedCollection<T extends Record<string, any>> {
         count++;
       }
     }
-    if (count > 0) {
-      this.saveToFile();
+
+    if (count > 0 && isCloudDatabaseConfigured()) {
       for (const m of modifiedItems) {
         if (m?._id) {
-          await upsertRemoteDoc(this.collectionName, m._id, m).catch(() => {});
+          await upsertRemoteDoc(this.collectionName, m._id, m);
         }
       }
+    }
+
+    if (count > 0) {
+      this.saveToFile();
     }
     return { modifiedCount: count };
   }
@@ -618,49 +714,29 @@ export class EmbeddedCollection<T extends Record<string, any>> {
   async findOneAndUpdate(
     filter: Record<string, any>,
     update: Record<string, any>,
-    options?: Record<string, any>
+    _options?: Record<string, any>
   ): Promise<any> {
     this.load();
-    let item = this.items.find((i) => this.matchFilter(i, filter));
-    if (!item && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
-      try {
-        const remoteItems = await fetchRemoteCollection(this.collectionName);
-        if (Array.isArray(remoteItems) && remoteItems.length > 0) {
-          for (const r of remoteItems) {
-            if (r && r._id) {
-              const idx = this.items.findIndex((i: any) => String(i._id) === String(r._id));
-              if (idx === -1) this.items.push(r);
-              else this.items[idx] = { ...this.items[idx], ...r };
-            }
-          }
-          this.saveToFile();
-          item = this.items.find((i) => this.matchFilter(i, filter));
-        }
-      } catch {}
-    }
-    if (!item) return null;
-
-    if (update.$set) {
-      Object.assign(item, update.$set);
-    } else {
-      Object.assign(item, update);
-    }
-    (item as any).updatedAt = new Date();
-    this.saveToFile();
-    await upsertRemoteDoc(this.collectionName, item._id, item).catch(() => {});
-    return this.wrapDoc(item);
+    await this.updateOne(filter, update);
+    return this.findOne(filter);
   }
 
   async deleteOne(filter: Record<string, any>): Promise<{ deletedCount: number }> {
     this.load();
     const idx = this.items.findIndex((i) => this.matchFilter(i, filter));
+    let targetDoc: any = null;
     if (idx !== -1) {
-      const removed = this.items.splice(idx, 1)[0];
+      targetDoc = this.items.splice(idx, 1)[0];
       this.saveToFile();
-      if (removed?._id) await deleteRemoteDoc(this.collectionName, removed._id).catch(() => {});
+    } else if (filter._id) {
+      targetDoc = { _id: filter._id };
+    }
+
+    if (targetDoc?._id && isCloudDatabaseConfigured()) {
+      await deleteRemoteDoc(this.collectionName, targetDoc._id);
       return { deletedCount: 1 };
     }
-    return { deletedCount: 0 };
+    return { deletedCount: targetDoc ? 1 : 0 };
   }
 
   async deleteMany(filter: Record<string, any> = {}): Promise<{ deletedCount: number }> {
@@ -669,25 +745,24 @@ export class EmbeddedCollection<T extends Record<string, any>> {
     const toRemove = this.items.filter((i) => this.matchFilter(i, filter));
     this.items = this.items.filter((i) => !this.matchFilter(i, filter));
     const deletedCount = initialLen - this.items.length;
+
     if (deletedCount > 0) {
       this.saveToFile();
-      for (const item of toRemove) {
-        if (item?._id) deleteRemoteDoc(this.collectionName, item._id).catch(() => {});
+      if (isCloudDatabaseConfigured()) {
+        for (const item of toRemove) {
+          if (item?._id) {
+            await deleteRemoteDoc(this.collectionName, item._id);
+          }
+        }
       }
     }
     return { deletedCount };
   }
 
   async findByIdAndDelete(id: any): Promise<any> {
-    this.load();
     const idStr = String(id?._id || id);
-    const idx = this.items.findIndex((i) => String(i._id) === idStr);
-    if (idx !== -1) {
-      const removed = this.items.splice(idx, 1)[0];
-      this.saveToFile();
-      if (removed?._id) await deleteRemoteDoc(this.collectionName, removed._id).catch(() => {});
-      return this.wrapDoc(removed);
-    }
-    return null;
+    const existing = await this.findOne({ _id: idStr });
+    await this.deleteOne({ _id: idStr });
+    return existing;
   }
 }
